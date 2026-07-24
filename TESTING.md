@@ -121,3 +121,59 @@ This document describes the tests performed for the document loading and preproc
 | JPG support | ✅ Passed |
 | Chunk generation | ✅ Passed |
 | Word-boundary chunking | ✅ Passed |
+
+## Semantic Search Tests
+
+### Environment
+
+- Embedding model:
+  `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`
+- Embedding dimension: `768`
+- Number of indexed chunks: `77`
+- Default `TOP_K`: `5`
+- Search engine: `FAISS`
+- Similarity method: cosine similarity through normalized vectors
+
+### Test 1 – Turkish document retrieval
+
+**Description**
+
+Verified that a Turkish query successfully retrieved relevant chunks from
+a Turkish document.
+
+**Status**
+
+Passed
+
+### Test 2 – English document retrieval
+
+**Description**
+
+Verified that an English query correctly retrieves relevant chunks from an
+English document.
+
+**Status**
+
+Passed
+
+### Test 3 – Persistent Cache
+
+**Description**
+
+Verified that the FAISS index and cached chunks were loaded successfully
+without rebuilding embeddings.
+
+**Status**
+
+Passed
+
+### Test 4 – Cross-language retrieval (English → Turkish)
+
+**Description**
+
+Verified that an English query successfully retrieved relevant
+information from a Turkish OCR document.
+
+**Status**
+
+Passed

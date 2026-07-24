@@ -7,6 +7,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent
 
 DATA_ROOT = BASE_DIR / "data"
+CACHE_ROOT = BASE_DIR / "cache"
 
 # -------------------------
 # CHUNKING
@@ -17,5 +18,22 @@ CHUNK_OVERLAP = 100
 # -------------------------
 # OCR
 # -------------------------
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+TESSERACT_PATH = "tesseract"
 OCR_LANG = "tur+eng"
+
+# -------------------------
+# MODEL
+# -------------------------
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+
+# -------------------------
+# FAISS
+# -------------------------
+INDEX_PATH = CACHE_ROOT / "faiss.index"
+CHUNKS_PATH = CACHE_ROOT / "chunks.pkl"
+META_PATH = CACHE_ROOT / "metadata.json"
+
+# -------------------------
+# RETRIEVAL
+# -------------------------
+TOP_K = 5
