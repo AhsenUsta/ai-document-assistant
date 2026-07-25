@@ -1,6 +1,7 @@
 # ai-document-assistant
 
-AI-powered document assistant for PDF, PNG and JPEG question answering.
+A multilingual Retrieval-Augmented Generation (RAG) document assistant
+for question answering over PDF, PNG, and JPEG documents.
 
 ## Features
 
@@ -9,8 +10,9 @@ AI-powered document assistant for PDF, PNG and JPEG question answering.
 - OCR for PNG and JPG images
 - Turkish and English OCR support
 - Text chunking with overlap
-- Semantic search over document chunks
+- Hybrid retrieval (BM25 + FAISS semantic search)
 - RAG-based natural language question answering (local LLM via Ollama)
+- Automated evaluation harness for measuring retrieval and answer accuracy
 
 ## Requirements
 
@@ -38,6 +40,7 @@ reasoning. Any locally available Ollama model can be used instead.
 
 ```bash
 pip install -r requirements.txt
+ollama pull qwen3:1.7b
 ```
 
 ## Usage
@@ -71,19 +74,6 @@ python search.py
 ```bash
 python rag.py
 ```
-## Current Stage
-
-The project currently implements:
-
-- PDF text extraction
-- OCR for scanned documents (Turkish and English)
-- Image OCR (PNG, JPG)
-- Text chunking
-- Multilingual embeddings
-- FAISS vector indexing
-- Persistent cache
-- Semantic search
-- RAG-based question answering via a local LLM (Ollama)
 
 ## RAG Pipeline
 
@@ -94,24 +84,28 @@ Text Extraction / OCR
     ↓
 Text Chunking
     ↓
-Sentence Embeddings
-    ↓
-FAISS Vector Index
-    ↓
-Semantic Search
-    ↓
-Relevant Chunks
-    ↓
-LLM (Ollama) — Answer Generation
-    ↓
-Answer
+        +----------------------+
+        |                      |
+        ↓                      ↓
+Sentence Embeddings        BM25 Index
+        ↓                      ↓
+     FAISS Index               │
+        └──────────┬───────────┘
+                   ↓
+      Hybrid Retrieval (RRF)
+                   ↓
+          Relevant Chunks
+                   ↓
+            LLM (Ollama)
+                   ↓
+                Answer
 ```
 
-## Semantic Search
+## Hybrid Retrieval
 
-The semantic search component loads the previously generated FAISS index
-and searches for document chunks that are semantically similar to the
-user's question.
+The retrieval component loads the previously generated FAISS index and
+BM25 index, combines semantic and lexical search using Reciprocal Rank
+Fusion (RRF), and returns the most relevant document chunks.
 
 Run:
 
@@ -150,6 +144,8 @@ EMBEDDING_MODEL = (
     "paraphrase-multilingual-mpnet-base-v2"
 )
 ```
+Hybrid search parameters (BM25/semantic weighting, RRF constants) are
+defined in `search.py`'s `hybrid_search` function.
 
 ## Test Samples
 
@@ -172,3 +168,21 @@ development and testing (see `TESTING.md` for detailed test results):
 
 These are provided for convenience so the system can be tested without
 needing to source your own documents.
+
+## Automated Evaluation
+
+An automated evaluation harness is available to systematically test
+retrieval and answer quality:
+
+```bash
+python evaluate.py
+```
+
+This runs the test cases defined in `evaluation.json` and reports:
+- **Source Hit@K** — whether the correct source document was retrieved
+- **Answer Accuracy** — whether the generated answer matches the
+  expected value or contains the expected keywords
+
+A detailed report is written to `evaluation_report.json`. See
+`TESTING.md` for a summary of current results (Source Hit@K: 100%,
+Answer Accuracy: 83.33%) and known limitations.

@@ -201,4 +201,81 @@ through chunking.
 - Test whether a larger model (qwen3:4b/8b) resolves the generation
   failure above, if a machine with more VRAM becomes available
 - Build a minimal interface (Streamlit or FastAPI) for usability
-- Record demo video
+
+## Day 4
+
+### Hybrid Search Implementation
+
+Implemented hybrid search (BM25 + semantic via Reciprocal Rank Fusion)
+to address retrieval inconsistencies observed in Day 3 testing,
+particularly for short, code-heavy documents (e.g., the sample
+invoice) where pure semantic search sometimes failed to rank the
+correct chunk highly enough.
+
+**Regression encountered:** The first implementation used raw BM25
+rank without a minimum score threshold, which allowed near-zero
+lexical matches to enter the fused ranking. This caused two
+previously-passing test cases to break (TÜİK financial figures — see
+TESTING.md Test 11 for full details). Fixed by adding a
+`bm25_min_score` threshold to exclude irrelevant lexical matches.
+
+### Prompt Refinement: Label-Value Matching
+
+Added explicit prompt rules to handle a recurring failure pattern:
+OCR/table-flattening produces "value label value label" ordering
+(e.g., a total appearing right after an unrelated preceding number),
+causing the model to match the wrong number to a label. Added
+instructions to match the number immediately following a label, and to
+double-check similar/paired labels (e.g., active/passive totals).
+
+This fix, combined with the hybrid search regression fix, resolved
+four previously-failing test queries (see TESTING.md Test 12).
+
+### Automated Evaluation Harness
+
+Built `evaluate.py` + `evaluation.json` to replace manual, ad-hoc
+before/after testing with a repeatable evaluation suite. Measures:
+- Source Hit@K (retrieval accuracy)
+- Answer Accuracy (exact-contains and keyword-contains matching)
+
+Discovered and fixed a false negative in the evaluation script itself:
+Turkish OCR output sometimes substitutes "ı" for "i" (and similar
+character pairs), causing an otherwise-correct answer to fail a strict
+keyword match. Added Turkish character normalization to the comparison
+logic to fix this without weakening the test.
+
+**Final results:** Source Hit@K 5/5 (100%), Answer Accuracy 5/6
+(83.33%). Full results in `evaluation_report.json`; see TESTING.md
+Test 13 for analysis of the one remaining failure (a generation-level
+issue where the model selects a less relevant paragraph from an
+otherwise correctly-retrieved document).
+
+### Next Steps
+
+**Priority 1 — complete the remaining case study deliverables:**
+
+- Build a minimal Streamlit interface for usability.
+- Record a short demonstration video.
+
+**Priority 2 — improve extraction for numeric and table-heavy documents:**
+
+- Implement table-structure-aware extraction to preserve row/column
+  relationships instead of flattening tables into plain text. For
+  digital PDFs, evaluate tools such as `pdfplumber` or `camelot`; for
+  scanned tables, investigate layout-aware OCR approaches using
+  Tesseract TSV/hOCR output.
+- Evaluate PaddleOCR as an alternative to Tesseract for the two OCR
+  failure cases identified during testing: the invoice's dense
+  multi-column summary section (Test 9) and Turkish character accuracy
+  (Test 5). This comparison would determine whether adopting PaddleOCR
+  provides measurable improvements before changing the existing OCR
+  pipeline.
+
+**Priority 3 — extend evaluation and retrieval quality:**
+
+- Expand `evaluation.json` with the additional manually tested cases
+  documented in `TESTING.md`, increasing the benchmark from 6 cases to
+  approximately 15–18 cases.
+- Evaluate a cross-encoder reranker to improve chunk ranking for
+  challenging queries, particularly those involving numeric values and
+  table-heavy documents.

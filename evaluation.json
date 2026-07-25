@@ -1,0 +1,45 @@
+[
+  {
+    "question": "What is the supplier GSTIN?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "17ABCDEF123GXYZ"
+    ]
+  },
+  {
+    "question": "What is the IGST rate?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "12%"
+    ]
+  },
+  {
+    "question": "COCO veri seti nedir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "nesne algılama",
+      "veri seti"
+    ]
+  },
+  {
+    "question": "COCO veri setinin lisans ücreti nedir?",
+    "expected_answer": "I could not find the answer in the provided documents."
+  },
+  {
+    "question": "TÜBİTAK'ın kuruluş amacı nedir?",
+    "expected_source": "digital_tr_product_guide.pdf",
+    "expected_answer_contains": [
+      "araştırma",
+      "geliştirme",
+      "ülke kalkınması"
+    ]
+  },
+  {
+    "question": "Sample custody nasıl sağlanır?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "custody",
+      "Chain-of-Custody"
+    ]
+  }
+]

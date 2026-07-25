@@ -1,6 +1,7 @@
 # TESTING
 
-This document describes the tests performed for the document loading and preprocessing stage of the project.
+This document describes the testing performed for the document loading,
+retrieval, and question-answering pipeline of the project.
 
 ---
 
@@ -400,6 +401,106 @@ Mixed — the system handles simple, single-fact lookups reasonably
 enumeration ("how many items") and can hallucinate answers for facts
 that were actually present but perhaps not attended to correctly
 (GSTIN number).
+
+---
+
+### Test 11 – Hybrid Search Implementation (BM25 + Semantic)
+
+**Motivation**
+Tests 7-10 suggested that pure semantic search sometimes failed to
+rank the correct chunk highly enough, especially for queries involving
+specific codes/terms (e.g., "IGST") in short, code-heavy documents like
+the invoice. Implemented hybrid search combining BM25 (lexical) and
+semantic search via Reciprocal Rank Fusion (RRF).
+
+**Initial regression:** The first implementation used raw BM25 rank
+without a minimum score threshold, causing chunks with near-zero
+lexical relevance (e.g., an unrelated TÜBİTAK document sharing common
+words like "Türkiye" or "kurum") to enter the fused ranking. This
+caused two previously-correct answers to break:
+- "TÜİK aktif toplamı nedir?" → wrong figure returned
+- "Personel giderleri ne kadardır?" → reverted to "not found"
+
+**Fix:** Added a `bm25_min_score` threshold to exclude near-zero
+lexical matches from the fused ranking, preventing low-relevance
+documents from polluting results.
+
+**Status**
+Fixed after regression — see Test 12 for before/after comparison.
+
+---
+
+### Test 12 – Prompt Refinement: Label-Value Matching
+
+**Motivation**
+Even after fixing the hybrid search regression, "TÜİK aktif toplamı
+nedir?" returned the wrong number (-760.049,74 instead of
+377.527.395,96). Root cause: OCR/table-flattening produces
+"value label value label" ordering (e.g.,
+"-760.049,74 AKTİF TOPLAMI 377.527.395,96"), and the model was
+matching the number preceding the label instead of following it.
+
+**Fix:** Added explicit prompt rules instructing the model to match
+the number immediately following a label (not preceding it), and to
+double-check when multiple similar/paired labels appear near each
+other (e.g., paired totals like active/passive, income/expense).
+
+**Results (before → after):**
+
+| Query | Before | After |
+|---|---|---|
+| "TÜİK aktif toplamı nedir?" | Wrong figure (-760.049,74) | Correct (377.527.395,96) |
+| "Personel giderleri ne kadardır?" | Correct, but the answer chunk ranked last (5th) among mostly irrelevant retrieval results | Correct |
+| "What is the supplier GSTIN?" | "Not found," despite the correct value being present in the top-ranked chunk (a generation-level disambiguation failure — three similar GSTIN/UIN codes appear in the same chunk) | Correct (17ABCDEF123GXYZ) |
+| "What is the IGST rate?" | Retrieval failed entirely (invoice not retrieved for this specific phrasing) | Correct (12%), invoice retrieved at rank 1 |
+
+**Status**
+Passed — prompt refinement, combined with the hybrid search fix,
+resolved all four previously-failing queries above.
+
+---
+
+### Test 13 – Automated Evaluation Harness
+
+**Motivation**
+Manual before/after testing (Tests 7-12) was informative but not
+easily repeatable. Built an automated evaluation harness
+(`evaluate.py` + `evaluation.json`) to systematically and repeatably
+measure retrieval and answer accuracy across a fixed set of test
+cases, rather than relying on ad-hoc manual comparisons.
+
+**Metrics measured:**
+- **Source Hit@K** — whether the correct source document was
+  retrieved.
+- **Answer Accuracy** — whether the generated answer matches the
+  expected answer (exact-contains match) or expected keywords
+  (contains-all match).
+
+**Initial run:** 4/6 passed (66.67%). One failure
+("COCO veri seti nedir?") was found to be a false negative in the
+evaluation script itself: the actual answer was correct, but differed
+from the expected keyword only in Turkish character representation
+("algılama" vs. OCR-degraded "algilama"). Added Turkish character
+normalization (ı/i, ş/s, ğ/g, ü/u, ö/o, ç/c) to the evaluation
+comparison logic to tolerate this kind of OCR-induced variation
+without weakening the underlying test.
+
+**Final run:**
+- **Source Hit@K: 5/5 (100%)** — retrieval reliably surfaces the
+  correct document across all test cases where source was checked.
+- **Answer Accuracy: 5/6 (83.33%)**
+
+**Remaining failure:** "TÜBİTAK'ın kuruluş amacı nedir?" — the retrieval pipeline 
+successfully retrieved the correct source document, but the
+LLM answers using a different section of the document instead of the
+section describing the founding purpose. This is a generation-level
+issue rather than a retrieval failure.
+
+**Status**
+Known limitation — full results and raw output available in
+`evaluation_report.json`. This evaluation harness provides 
+a reproducible benchmark for future retrieval, 
+prompt, and generation improvements.
 
 ---
 
