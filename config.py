@@ -25,6 +25,7 @@ OCR_LANG = "tur+eng"
 # MODEL
 # -------------------------
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+MODEL_NAME = "qwen3:1.7b"
 
 # -------------------------
 # FAISS

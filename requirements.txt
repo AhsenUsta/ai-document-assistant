@@ -4,3 +4,4 @@ Pillow
 sentence-transformers
 faiss-cpu
 numpy
+ollama

@@ -39,7 +39,7 @@ def load_cache() -> tuple[faiss.Index, list[dict]]:
     return index, chunks
 
 
-def semantic_search(query: str,model: SentenceTransformer,index: faiss.Index,chunks: list[dict],top_k: TOP_K,) -> list[dict]:
+def semantic_search(query: str,model: SentenceTransformer,index: faiss.Index,chunks: list[dict],top_k: int = TOP_K,) -> list[dict]:
     """Return the most relevant chunks for a query."""
     query_embedding = model.encode([query],convert_to_numpy=True,).astype("float32")
 
