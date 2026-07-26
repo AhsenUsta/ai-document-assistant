@@ -411,3 +411,201 @@ pipeline into a multilingual RAG assistant supporting:
 Several known limitations remain, particularly around table extraction
 and retrieval balancing for highly imbalanced document collections.
 These are documented throughout the development log and in TESTING.md.
+
+### OCR Pipeline Improvements
+
+While testing scanned documents on Windows, I reviewed the OCR pipeline for
+resource cleanup and text reconstruction.
+
+#### OCR Resource Cleanup
+
+Wrapped OCR image creation in a `try/finally` block and explicitly released
+temporary resources after each page.
+
+**Changes:**
+
+- Added explicit `img.close()` after OCR processing.
+- Released the temporary PyMuPDF pixmap reference after each page.
+- Ensured cleanup occurs even if OCR raises an exception.
+
+**Reason:**
+
+Although no functional issues were observed during normal extraction, explicit
+resource cleanup reduces the lifetime of temporary image objects and makes the
+OCR pipeline more robust, particularly on Windows where delayed resource
+release can occasionally contribute to temporary file locking.
+
+#### OCR Word Reconstruction
+
+Adjusted the horizontal word-gap threshold used during OCR line
+reconstruction.
+
+```python
+elif gap > 2:
+↓
+elif gap > 0.5:
+```
+
+## What I Would Do Differently If I Started Again
+
+If I were starting this project again with the knowledge gained during
+development and testing, I would make several architectural decisions earlier.
+
+### 1. Build the evaluation framework before optimizing the pipeline
+
+The automated evaluation suite was added after several manual tests had already
+been performed.
+
+Starting with a small but representative benchmark would have made it easier to
+measure the effect of each change and detect regressions earlier.
+
+I would define evaluation cases for:
+
+- Digital and scanned documents
+- Turkish and English queries
+- Numeric extraction
+- Cross-language retrieval
+- Hallucination and "not found" behaviour
+- Table-heavy documents
+
+This would allow retrieval, extraction, and generation changes to be evaluated
+independently from the beginning.
+
+### 2. Separate extraction, retrieval, and generation failures earlier
+
+During development, some incorrect answers initially appeared to be retrieval
+problems. Direct inspection of extracted text and retrieved chunks later showed
+that failures could occur at three different stages:
+
+1. The information was not extracted from the document.
+2. The information was extracted but not retrieved.
+3. The correct chunk was retrieved, but the LLM failed to use it.
+
+If starting again, I would add diagnostic tools for all three stages from the
+first iteration:
+
+- Raw extracted text inspection
+- Chunk inspection
+- Retrieval score display
+- Final prompt and context inspection
+- Structured evaluation logs
+
+This would reduce debugging time and make root-cause analysis more systematic.
+
+### 3. Design table handling as a separate extraction path
+
+The original pipeline treated all document content as flattened plain text.
+
+This worked well for narrative documents but caused problems for financial
+tables and scanned invoices because row and column relationships were lost.
+
+If starting again, I would separate document extraction into different
+strategies:
+
+- Standard text extraction for narrative digital PDFs
+- Table-aware extraction for digital tables
+- Layout-aware OCR for scanned tables
+- Standard OCR for regular scanned pages and images
+
+Tools such as `pdfplumber` or `camelot` could be evaluated for digital tables,
+while Tesseract TSV/hOCR or another layout-aware OCR solution could be used for
+scanned tables.
+
+### 4. Avoid global full-index rebuilding for every document change
+
+The current implementation rebuilds the complete index when documents are
+added or removed.
+
+This is acceptable for the current case-study dataset, but it would become
+inefficient as the number or size of documents increases.
+
+If starting again, I would design document-level incremental indexing:
+
+- Store document IDs with each chunk.
+- Add vectors only for newly uploaded documents.
+- Remove vectors and metadata only for deleted documents.
+- Keep index and metadata updates atomic.
+
+This would improve scalability and reduce processing time.
+
+### 5. Add duplicate-content detection during ingestion
+
+Testing showed that identical content stored as both JPG and PNG produced
+duplicate chunks and reduced context diversity.
+
+If starting again, I would calculate a document or chunk hash during ingestion
+and skip exact duplicates before creating embeddings.
+
+Near-duplicate chunk detection could also be added later if necessary.
+
+### 6. Keep retrieval candidates balanced across documents
+
+A large document can contribute many more chunks than smaller documents and
+dominate the candidate set.
+
+If starting again, I would introduce per-source retrieval limits or source-aware
+ranking from the beginning.
+
+For example, retrieval could first select the best chunks from each source and
+then apply the final ranking across the combined candidates.
+
+### 7. Treat prompt rules as a safeguard, not the main control mechanism
+
+Some behaviours, such as multilingual fallback responses and repeated-question
+echoes, were not fully reliable when controlled only through prompt
+instructions.
+
+If starting again, I would keep the prompt simple and implement deterministic
+application-level checks for:
+
+- Empty model responses
+- Exact question echoing
+- Language-aware fallback messages
+- Missing retrieval results
+- Unsupported requests
+
+This would make system behaviour more predictable.
+
+### 8. Define resource-management rules for OCR from the beginning
+
+On Windows, temporary image resources may remain alive longer than expected.
+
+If starting again, I would use explicit cleanup patterns from the first OCR
+implementation:
+
+- Use context managers where possible.
+- Close temporary PIL images explicitly.
+- Release PyMuPDF pixmap references after each page.
+- Avoid keeping large page images in memory longer than necessary.
+
+This would reduce the risk of file-locking and memory-pressure issues.
+
+### 9. Centralize configuration values earlier
+
+Several important parameters were adjusted during testing, including:
+
+- Chunk size and overlap
+- OCR spacing thresholds
+- Retrieval candidate count
+- Maximum LLM context count
+- BM25 minimum score
+- Model name and context size
+
+If starting again, I would keep all tunable values in a single configuration
+module and document their purpose.
+
+This would make experimentation easier and prevent unexplained magic numbers
+from appearing in the code.
+
+### Conclusion
+
+The main lesson from the project is that a RAG system should not be treated as
+a single model call.
+
+Extraction quality, chunking, retrieval, prompt construction, generation, and
+evaluation must be designed and tested as separate components.
+
+The current implementation evolved successfully through testing, but starting
+with stronger evaluation, diagnostics, table-aware extraction, and incremental
+indexing would have reduced rework and produced a more scalable architecture
+earlier.

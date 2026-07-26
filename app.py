@@ -52,7 +52,7 @@ def save_uploaded_files(uploaded_files) -> list[str]:
             raise ValueError(f"Unsupported file type: {safe_name}")
 
         target_path = DATA_ROOT / safe_name
-        target_path.write_bytes(uploaded_file.getbuffer())
+        target_path.write_bytes(uploaded_file.getvalue())
         saved_files.append(safe_name)
 
     return saved_files
@@ -167,6 +167,12 @@ if "rag_initialized" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
     
+if "uploader_key" not in st.session_state:
+    st.session_state["uploader_key"] = 0
+
+if "document_operation_in_progress" not in st.session_state:
+    st.session_state["document_operation_in_progress"] = False
+    
 # ------------------------------------------------------------
 # Sidebar
 # ------------------------------------------------------------
@@ -189,16 +195,59 @@ with st.sidebar:
     ):
         st.session_state["messages"] = []
         st.rerun()
+    
+    delete_all_clicked = st.button(
+    "Clear documents",
+    use_container_width=True,
+    disabled=st.session_state["document_operation_in_progress"],
+)
 
+    if delete_all_clicked:
+        st.session_state["document_operation_in_progress"] = True
+
+        try:
+            deleted = 0
+
+            for file_path in DATA_ROOT.iterdir():
+                if (
+                    file_path.is_file()
+                    and file_path.suffix.lower() in ALLOWED_EXTENSIONS
+                ):
+                    file_path.unlink()
+                    deleted += 1
+
+            clear_index_cache()
+
+            rag.faiss_index = None
+            rag.document_chunks = None
+            rag.bm25 = None
+
+            st.session_state["processed_files"].clear()
+            st.session_state["messages"] = []
+            st.session_state["rag_initialized"] = False
+            st.session_state["index_version"] += 1
+            st.session_state["uploader_key"] += 1
+
+            st.success(f"Deleted {deleted} document(s).")
+
+        except Exception as exc:
+            st.error(f"Delete failed: {exc}")
+
+        finally:
+            st.session_state["document_operation_in_progress"] = False
+
+        st.rerun()
+        
     st.divider()
 
     uploaded_files = st.file_uploader(
         "Upload documents",
         type=["pdf", "png", "jpg", "jpeg"],
         accept_multiple_files=True,
+        key=f"document_uploader_{st.session_state['uploader_key']}",
         help=(
-            "Turkish and English digital or scanned "
-            "documents are supported."
+        "Turkish and English digital or scanned "
+        "documents are supported."
         ),
     )
 
@@ -303,6 +352,7 @@ with st.sidebar:
     # --------------------------------------------------------
 
     if new_files:
+        st.session_state["document_operation_in_progress"] = True
         try:
             with st.status(
                 "Processing new documents...",
@@ -367,6 +417,9 @@ with st.sidebar:
 
         except Exception as exc:
             st.error(f"Indexing failed: {exc}")
+            
+        finally:
+            st.session_state["document_operation_in_progress"] = False
 
     st.divider()
 

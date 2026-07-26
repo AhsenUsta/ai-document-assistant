@@ -29,19 +29,27 @@ def extract_text_pdf(pdf_path: str | Path) -> str:
 
             if is_scanned_page(page):
                 t_ocr_start = time.perf_counter()
+                pix = None
+                img = None
 
-                pix = page.get_pixmap(dpi=300, alpha=False)
-                img = Image.frombytes(
-                    "RGB",
-                    [pix.width, pix.height],
-                    pix.samples
-                )
+                try:
+                    pix = page.get_pixmap(dpi=300, alpha=False)
+                    img = Image.frombytes(
+                        "RGB",
+                        [pix.width, pix.height],
+                        pix.samples
+                    )
 
-                page_text = pytesseract.image_to_string(
-                    img,
-                    lang=OCR_LANG
-                )
+                    page_text = pytesseract.image_to_string(
+                        img,
+                        lang=OCR_LANG
+                    )
+                    
+                finally:
+                    if img is not None:
+                        img.close()
 
+                    pix = None
                 print(
                     f"  [OCR] Page {page_num + 1} -> "
                     f"{time.perf_counter() - t_ocr_start:.2f}s"
@@ -95,7 +103,7 @@ def extract_text_from_page(page) -> str:
                 gap = x0 - prev_x1
                 if gap > 30:
                     line_str += "\t"
-                elif gap > 2:
+                elif gap > 0.5:
                     line_str += " "
             line_str += text
             prev_x1 = x1

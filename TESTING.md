@@ -666,3 +666,27 @@ The remaining limitations are concentrated in three areas:
 
 These limitations are documented throughout this report and provide a
 clear roadmap for future improvements.
+
+### Test 18 – OCR Resource Cleanup and Word Reconstruction
+
+**Description**
+
+Verified that OCR resource cleanup and the updated word-gap threshold do not
+affect extraction correctness while improving OCR text reconstruction.
+
+**Procedure**
+
+1. Process multiple scanned PDF documents.
+2. Compare OCR output before and after the changes.
+3. Verify words are separated correctly.
+4. Confirm no OCR exceptions occur during processing.
+
+**Status**
+
+Passed
+
+**Observation**
+
+Explicit resource cleanup had no impact on OCR output while making the OCR
+pipeline more robust. Lowering the word-gap threshold improved word separation
+without introducing formatting regressions in the tested documents.
