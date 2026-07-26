@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>AI Document Assistant</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">AI</div>
+
+                <div>
+                    <h1>Document Assistant</h1>
+                    <p>Local multilingual RAG</p>
+                </div>
+            </div>
+
+            <section class="upload-card">
+                <h2>Documents</h2>
+
+                <p class="section-description">
+                    Upload PDF, PNG, JPG or JPEG files.
+                </p>
+
+                <label class="file-drop-zone" for="documentInput">
+					<span class="upload-icon">↑</span>
+					<strong>Choose documents</strong>
+					<span>Multiple files are supported</span>
+				</label>
+
+				<input
+					id="documentInput"
+					type="file"
+					accept=".pdf,.png,.jpg,.jpeg"
+					multiple
+					hidden
+				>
+
+				<div id="selectedFiles" class="selected-files">
+					<div class="selected-files-empty">
+						No file selected.
+					</div>
+				</div>
+
+				<button
+					id="uploadButton"
+					class="primary-button"
+					type="button">
+					Upload & Index
+				</button>
+
+				<div
+					id="uploadStatus"
+					class="status-message"
+				></div>
+            </section>
+
+            <div class="system-card">
+                <div class="system-row">
+                    <span class="status-dot"></span>
+                    <span>FastAPI connected</span>
+                </div>
+
+                <div class="system-row">
+                    <span>Retrieval</span>
+                    <strong>FAISS + BM25</strong>
+                </div>
+
+                <div class="system-row">
+                    <span>Generation</span>
+                    <strong>Ollama</strong>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <header class="topbar">
+                <div>
+                    <h2>Chat with your documents</h2>
+                    <p>
+                        Answers are generated from the indexed document context.
+                    </p>
+                </div>
+
+                <button
+                    id="clearChatButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Clear chat
+                </button>
+            </header>
+
+            <section id="chatMessages" class="chat-messages">
+                <div class="welcome-card">
+                    <div class="welcome-icon">✦</div>
+
+                    <h3>Ask a question about your documents</h3>
+
+                    <p>
+                        Upload one or more documents, wait for indexing to finish,
+                        and ask questions in Turkish or English.
+                    </p>
+
+                    <div class="example-grid">
+                        <button
+                            class="example-question"
+                            type="button"
+                            data-question="What is the main topic of the document?"
+                        >
+                            What is the main topic?
+                        </button>
+
+                        <button
+                            class="example-question"
+                            type="button"
+                            data-question="Summarize the indexed documents."
+                        >
+                            Summarize the documents
+                        </button>
+
+                        <button
+                            class="example-question"
+                            type="button"
+                            data-question="Bu dokümandaki en önemli bilgiler nelerdir?"
+                        >
+                            En önemli bilgiler nelerdir?
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="chat-composer">
+                <form id="questionForm">
+                    <textarea
+                        id="questionInput"
+                        rows="1"
+                        placeholder="Ask a question about your documents..."
+                    ></textarea>
+
+                    <button
+                        id="sendButton"
+                        class="send-button"
+                        type="submit"
+                        aria-label="Send question"
+                    >
+                        Send
+                    </button>
+                </form>
+
+                <p class="composer-note">
+                    The assistant answers only from retrieved document context.
+                </p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

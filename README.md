@@ -1,139 +1,513 @@
-# ai-document-assistant
+# AI Document Assistant
 
-A multilingual Retrieval-Augmented Generation (RAG) document assistant
-for question answering over PDF, PNG, and JPEG documents.
+AI Document Assistant is a local Retrieval-Augmented Generation application
+that allows users to upload documents and ask natural-language questions about
+their content.
+
+The application supports both digital PDFs and scanned documents through OCR.
+It combines semantic search and keyword search to retrieve relevant document
+sections before generating an answer with a locally running Ollama model.
+
+The final application uses a FastAPI backend and a custom HTML, CSS, and
+JavaScript frontend.
 
 ## Features
 
 - Digital PDF text extraction
-- OCR for scanned PDFs and images (Turkish and English)
+- OCR support for scanned PDFs and images
+- Turkish and English OCR support
+- Multiple document upload
+- Automatic document indexing after upload
 - Text chunking with overlap
-- Hybrid retrieval (FAISS semantic search + BM25, combined via
-  Reciprocal Rank Fusion)
-- RAG-based natural language question answering (local LLM via Ollama)
-- Streamlit chat interface with conversation history
-- Incremental document indexing (add or remove files without restarting)
-- Retrieval debug mode (view sources, retrieved chunks, and similarity scores)
-- Automated evaluation harness for measuring retrieval and answer accuracy
+- Multilingual sentence embeddings
+- FAISS semantic search
+- BM25 keyword search
+- Hybrid retrieval using Reciprocal Rank Fusion
+- Local RAG-based question answering with Ollama
+- Source document display for generated answers
+- Turkish and English question support
+- Chat interface with loading and error states
+- Document and index reset functionality
+- Protection against asking questions while indexing is in progress
+- Retrieval debug information for inspecting chunks and scores
+- Automated retrieval and answer evaluation
+
+## Architecture
+
+```text
+Browser
+   |
+   v
+FastAPI
+   |
+   +-- Document Upload API
+   |
+   +-- PDF Text Extraction
+   |       |
+   |       +-- Digital text extraction
+   |       |
+   |       +-- Tesseract OCR fallback
+   |
+   +-- Text Chunking
+   |
+   +-- Embedding Generation
+   |
+   +-----------------------------+
+   |                             |
+   v                             v
+FAISS Semantic Index         BM25 Index
+   |                             |
+   +--------------+--------------+
+                  |
+                  v
+      Hybrid Retrieval with RRF
+                  |
+                  v
+          Relevant Chunks
+                  |
+                  v
+          Local Ollama Model
+                  |
+                  v
+              Answer
+```
+
+## Technology Stack
+
+### Backend
+
+- Python
+- FastAPI
+- Uvicorn
+- PyMuPDF
+- Tesseract OCR
+- Sentence Transformers
+- FAISS
+- BM25
+- Ollama
+
+### Frontend
+
+- HTML
+- CSS
+- JavaScript
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.12 or newer
 - Tesseract OCR
-- [Ollama](https://ollama.com) installed and running
-- The following Ollama model pulled:
+- Ollama installed and running
+- A locally available Ollama model
+
+The default model is:
+
 ```bash
 ollama pull qwen3:8b
 ```
 
-**Note:** `TESSERACT_PATH` in `config.py` is set to `"tesseract"`, 
-assuming Tesseract is available on your system PATH. If you get a 
-"tesseract not found" error, either:
-- Add Tesseract to your PATH during/after installation, or
-- Set `TESSERACT_PATH` in `config.py` to the full path of your 
-  tesseract executable (e.g., `C:\Program Files\Tesseract-OCR\tesseract.exe` 
-  on Windows, or `/usr/bin/tesseract` on Linux/macOS).
+### Tesseract configuration
 
-**Note:** `MODEL_NAME` defaults to `qwen3:8b`. Earlier iterations used
-`qwen3:1.7b` due to VRAM constraints on the development machine (see
-`DEVLOG.md` for the full reasoning and trade-offs between model size,
-answer quality, and hallucination behavior). Any locally available
-Ollama model can be used instead — update `MODEL_NAME` in `config.py`.
+`TESSERACT_PATH` in `config.py` is set to:
+
+```python
+TESSERACT_PATH = "tesseract"
+```
+
+This assumes that Tesseract is available through the system `PATH`.
+
+When Tesseract is not available in `PATH`, configure its full executable path.
+
+Windows example:
+
+```python
+TESSERACT_PATH = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+)
+```
+
+Linux example:
+
+```python
+TESSERACT_PATH = "/usr/bin/tesseract"
+```
+
+### Ollama model configuration
+
+`MODEL_NAME` defaults to:
+
+```python
+MODEL_NAME = "qwen3:8b"
+```
+
+Earlier project iterations used `qwen3:1.7b` because of hardware and VRAM
+constraints.
+
+The larger model produced more reliable answers but required more memory and
+longer generation times. Additional details about this decision are available
+in `DEVLOG.md`.
+
+Any model already available in Ollama can be used by changing `MODEL_NAME` in
+`config.py`.
 
 ## Installation
 
+Clone the repository:
+
+```bash
+git clone <repository-url>
+cd ai-document-assistant
+```
+
+Create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it on Windows:
+
+```powershell
+.venv\Scripts\activate
+```
+
+Activate it on Linux or macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install Python dependencies:
+
 ```bash
 pip install -r requirements.txt
+```
+
+Install the Ollama model:
+
+```bash
 ollama pull qwen3:8b
 ```
 
-## Usage
+Make sure Ollama is running before starting the application.
 
-1. Place your PDF, PNG or JPG files inside the `data/` folder.
+## Running the Application
 
-Sample test documents are provided in the `test_samples/` folder
-   (digital and scanned PDFs/images in Turkish and English, plus a
-   financial table and a scanned invoice). To try the system with
-   these, copy them into `data/`:
+Start the FastAPI development server:
 
 ```bash
-   cp test_samples/* data/
+uvicorn main:app --reload
 ```
 
-   (On Windows: `copy test_samples\* data\`)
-   
-2. Build the document index:
+Open the application in a browser:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Web Interface Usage
+
+1. Open the application in the browser.
+2. Select one or more PDF, PNG, JPG, or JPEG files.
+3. Review the selected filenames and file sizes.
+4. Click `Upload & Index`.
+5. Wait until document processing and index creation are complete.
+6. Ask questions about the uploaded documents.
+7. Review the generated answer and its source documents.
+8. Use `Clear Documents` to remove the current documents and reset the index.
+
+While document indexing is running, the question input is disabled to prevent
+queries from being executed against an incomplete index.
+
+## Command-Line Usage
+
+The individual pipeline components can also be tested from the command line.
+
+### Build the document index
+
+Place documents inside the configured data directory and run:
 
 ```bash
 python indexer.py
 ```
 
-3. Search the indexed documents (retrieval only, no LLM):
+### Test retrieval without the LLM
 
 ```bash
 python search.py
 ```
 
-4. Ask questions and get LLM-generated answers:
+### Test the complete RAG pipeline
+
 ```bash
 python rag.py
-
 ```
-### Web interface
+
+### Run automated evaluation
 
 ```bash
-streamlit run app.py
+python evaluate.py
 ```
 
-Upload documents from the sidebar — they are indexed automatically.
-Ask questions in the chat box. Toggle "Show retrieval details" to see
-sources, retrieved chunks, and similarity scores for each answer.
-Removing a file from the upload list also removes it from the index
-and rebuilds the cache.
+## API Endpoints
+
+### Application interface
+
+```http
+GET /
+```
+
+Returns the HTML application interface.
+
+### Upload and index documents
+
+```http
+POST /documents
+```
+
+Accepts one or more uploaded files.
+
+The endpoint:
+
+1. validates the files,
+2. saves the uploaded documents,
+3. extracts digital text or performs OCR,
+4. creates text chunks,
+5. generates embeddings,
+6. rebuilds the FAISS index,
+7. rebuilds the BM25 index,
+8. reloads the in-memory RAG components.
+
+Example response:
+
+```json
+{
+  "success": true,
+  "uploaded_files": [
+    "sample.pdf"
+  ],
+  "indexed_files": [
+    "sample.pdf"
+  ],
+  "chunk_count": 42,
+  "faiss_vectors": 42,
+  "duration": 4.28
+}
+```
+
+### Ask a document question
+
+```http
+POST /ask
+```
+
+Form field:
+
+```text
+question
+```
+
+Example response:
+
+```json
+{
+  "question": "What is the IGST amount?",
+  "answer": "16,729.92",
+  "sources": [
+    "ocr_en_invoice_table.pdf"
+  ],
+  "results": []
+}
+```
+
+The endpoint returns an error when:
+
+- no question is provided,
+- no document index is available,
+- document indexing is currently in progress,
+- the RAG pipeline cannot generate an answer.
+
+### Clear documents and index
+
+```http
+DELETE /documents
+```
+
+Removes:
+
+- uploaded documents,
+- generated FAISS data,
+- serialized chunks,
+- BM25 cache data,
+- metadata,
+- in-memory retrieval state.
+
+This endpoint allows the application to be tested with a clean document set.
+
+### Health check
+
+```http
+GET /health
+```
+
+Can be used to verify that the FastAPI application is running.
 
 ## RAG Pipeline
 
+The question-answering pipeline follows these steps:
+
 ```text
-Documents
-    ↓
-Text Extraction / OCR
-    ↓
-Text Chunking
-    ↓
-        +----------------------+
-        |                      |
-        ↓                      ↓
-Sentence Embeddings        BM25 Index
-        ↓                      ↓
-     FAISS Index               │
-        └──────────┬───────────┘
-                   ↓
-      Hybrid Retrieval (RRF)
-                   ↓
-          Relevant Chunks
-                   ↓
-            LLM (Ollama)
-                   ↓
-                Answer
+User Question
+      |
+      v
+Question Embedding
+      |
+      +-------------------------+
+      |                         |
+      v                         v
+FAISS Search                BM25 Search
+      |                         |
+      +------------+------------+
+                   |
+                   v
+     Reciprocal Rank Fusion
+                   |
+                   v
+          Top Retrieved Chunks
+                   |
+                   v
+          Prompt Construction
+                   |
+                   v
+              Ollama
+                   |
+                   v
+               Answer
 ```
+
+The model is instructed to answer only from the supplied document context.
+
+When the retrieved context does not contain the answer, the application returns
+a message indicating that no relevant information was found.
 
 ## Hybrid Retrieval
 
-The retrieval component loads the previously generated FAISS index and
-BM25 index, combines semantic and lexical search using Reciprocal Rank
-Fusion (RRF), and returns the most relevant document chunks.
+Semantic search and keyword search solve different retrieval problems.
 
-Run:
+FAISS semantic search is useful for:
 
-```bash
-python search.py
+- natural-language questions,
+- paraphrased questions,
+- conceptually similar text,
+- multilingual semantic matching.
+
+BM25 is useful for:
+
+- exact labels,
+- invoice numbers,
+- tax values,
+- account names,
+- abbreviations,
+- document-specific terminology.
+
+The results of both retrievers are combined with Reciprocal Rank Fusion.
+
+This approach improves retrieval for both natural-language questions and exact
+field-based questions.
+
+Example questions:
+
+```text
+What is the IGST amount?
 ```
 
-The application returns:
+```text
+What is the tax amount in words?
+```
 
-- similarity score (hybrid, semantic, and BM25)
-- source document
-- relevant document chunks
+```text
+Proje özel hesabı kaç TL?
+```
+
+## Retrieval Configuration
+
+The main retrieval settings are located in `config.py`.
+
+```python
+CHUNK_SIZE = 600
+CHUNK_OVERLAP = 100
+
+TOP_K = 15
+MAX_CONTEXTS = 5
+
+MODEL_NAME = "qwen3:8b"
+
+EMBEDDING_MODEL = (
+    "sentence-transformers/"
+    "paraphrase-multilingual-mpnet-base-v2"
+)
+```
+
+### `CHUNK_SIZE`
+
+Defines the approximate amount of text stored in each document chunk.
+
+### `CHUNK_OVERLAP`
+
+Repeats a portion of the previous chunk to reduce information loss at chunk
+boundaries.
+
+### `TOP_K`
+
+Defines how many candidate chunks are collected by the retrieval pipeline.
+
+### `MAX_CONTEXTS`
+
+Defines how many of the highest-ranked chunks are passed to the LLM.
+
+`TOP_K` and `MAX_CONTEXTS` are intentionally separate.
+
+Retrieval uses a wider candidate set to reduce the chance of missing a relevant
+chunk. The LLM receives a smaller set to avoid context dilution and unnecessary
+generation latency.
+
+Hybrid search parameters and Reciprocal Rank Fusion behavior are defined in
+`search.py`.
+
+## OCR Processing
+
+Digital PDFs are first processed with PyMuPDF.
+
+When a page contains little or no usable embedded text, the page is rendered as
+an image and processed with Tesseract OCR.
+
+Supported OCR languages include:
+
+```text
+Turkish
+English
+```
+
+OCR quality depends on:
+
+- scan resolution,
+- image sharpness,
+- page rotation,
+- table complexity,
+- font quality,
+- document layout.
+
+Labels may sometimes be extracted differently from their original form.
+
+For example:
+
+```text
+GSTIN/UIN
+GSTIN / UIN
+GSTIN|UIN
+GSTIN/UlN
+```
+
+These OCR variations can affect exact keyword matching.
 
 ## Generated Cache Files
 
@@ -143,71 +517,257 @@ The indexing process generates the following files:
 cache/
 ├── faiss.index
 ├── chunks.pkl
-└── metadata.json
+├── metadata.json
 └── bm25.pkl
 ```
 
-## Configuration
+### `faiss.index`
 
-The following values can be changed in `config.py`:
+Stores the semantic vector index.
 
-```python
-CHUNK_SIZE = 600
-CHUNK_OVERLAP = 100
-TOP_K = 15
-MAX_CONTEXTS = 5
-MODEL_NAME = "qwen3:8b"
-EMBEDDING_MODEL = (
-    "sentence-transformers/"
-    "paraphrase-multilingual-mpnet-base-v2"
-)
+### `chunks.pkl`
+
+Stores the extracted document chunks and source metadata.
+
+### `metadata.json`
+
+Stores index-related metadata.
+
+### `bm25.pkl`
+
+Stores the keyword retrieval index.
+
+These files are regenerated when the document index is rebuilt.
+
+## Project Structure
+
+```text
+ai-document-assistant/
+├── main.py
+├── indexer.py
+├── search.py
+├── rag.py
+├── evaluate.py
+├── config.py
+├── requirements.txt
+├── evaluation.json
+├── README.md
+├── TESTING.md
+├── DEVLOG.md
+├── data/
+├── cache/
+├── test_samples/
+└── static/
+    ├── index.html
+    ├── app.js
+    └── style.css
 ```
-`TOP_K` and `MAX_CONTEXTS` are deliberately separate: retrieval casts
-a wider net (`TOP_K`) to reduce the chance of missing a relevant chunk
-ranked lower by either the semantic or lexical scorer, while
-`MAX_CONTEXTS` keeps only the top candidates in the LLM's context to
-avoid diluting it with lower-relevance chunks.
-
-Hybrid search parameters (BM25/semantic weighting, RRF constants) are
-defined in `search.py`'s `hybrid_search` function.
 
 ## Test Samples
 
-The `test_samples/` folder contains sample documents used during
-development and testing (see `TESTING.md` for detailed test results):
+The `test_samples/` directory contains documents used during development and
+evaluation.
 
-- `digital_tr_product_guide.pdf` — TÜBİTAK founding law/purpose
-  document (digital Turkish PDF)
-- `digital_en_product_guide.pdf` — EPA Sample and Evidence Management
-  SOP (digital English PDF)
-- `ocr_tr_production.jpg` / `.png` — COCO dataset description
-  (scanned Turkish document, OCR)
-- `ocr_en_product_guide.pdf` — Missouri public water systems notice
-  letter (scanned English document, OCR)
-- `digital_tr_table.pdf` — TÜİK financial statement/balance sheet
-  (digital Turkish PDF with dense tabular data)
-- `ocr_en_invoice_table.pdf` — sample tax invoice with a multi-column
-  table (scanned English document, OCR — used to test table/numeric
-  extraction)
+### Digital Turkish document
 
-These are provided for convenience so the system can be tested without
-needing to source your own documents.
+```text
+digital_tr_product_guide.pdf
+```
+
+A Turkish digital PDF used to evaluate text extraction and Turkish retrieval.
+
+### Digital English document
+
+```text
+digital_en_product_guide.pdf
+```
+
+An English digital PDF used to evaluate semantic and keyword retrieval.
+
+### Turkish OCR samples
+
+```text
+ocr_tr_production.jpg
+ocr_tr_production.png
+```
+
+Scanned Turkish documents used to test image OCR.
+
+### English OCR document
+
+```text
+ocr_en_product_guide.pdf
+```
+
+A scanned English PDF used to evaluate OCR and English question answering.
+
+### Turkish financial table
+
+```text
+digital_tr_table.pdf
+```
+
+A digital PDF containing dense financial and tabular information.
+
+Example question:
+
+```text
+Proje özel hesabı kaç TL?
+```
+
+### English invoice table
+
+```text
+ocr_en_invoice_table.pdf
+```
+
+A scanned invoice containing numeric values, labels, and multi-column table
+content.
+
+Example questions:
+
+```text
+What is the IGST amount?
+```
+
+```text
+What is the tax amount in words?
+```
+
+The detailed test results are documented in `TESTING.md`.
 
 ## Automated Evaluation
 
-An automated evaluation harness is available to systematically test
-retrieval and answer quality:
+The project includes an automated evaluation harness.
+
+Run:
 
 ```bash
 python evaluate.py
 ```
 
-This runs the test cases defined in `evaluation.json` and reports:
-- **Source Hit@K** — whether the correct source document was retrieved
-- **Answer Accuracy** — whether the generated answer matches the
-  expected value or contains the expected keywords
+Test cases are defined in:
 
-A detailed report is written to `evaluation_report.json`. The current
-benchmark consists of 32 automated test cases. See `TESTING.md` for
-the latest benchmark results and a discussion of the system's known
-limitations.
+```text
+evaluation.json
+```
+
+The evaluation process measures:
+
+- Source Hit@K
+- Expected source retrieval
+- Answer accuracy
+- Expected keyword matching
+- Exact numeric answer matching
+
+The generated evaluation report is written to:
+
+```text
+evaluation_report.json
+```
+
+The current benchmark contains 32 automated test cases.
+
+See `TESTING.md` for the latest results and known evaluation limitations.
+
+## Manual Testing Scenarios
+
+The application has been tested with:
+
+- digital Turkish PDFs,
+- digital English PDFs,
+- scanned Turkish images,
+- scanned English PDFs,
+- financial tables,
+- invoice tables,
+- multiple simultaneous document uploads,
+- missing-answer questions,
+- Turkish questions,
+- English questions,
+- document deletion and index reset,
+- questions submitted during index rebuilding,
+- unsupported and empty uploads.
+
+## Known Limitations
+
+- OCR accuracy depends on the quality of the source document.
+- Complex tables may not preserve their original row and column structure.
+- Multi-column PDFs may produce imperfect reading order.
+- A label and its value may be separated across neighboring chunks.
+- Exact values can be missed when OCR changes punctuation or characters.
+- Repeated labels may produce ambiguous answers.
+- The first request may take longer while models are loaded.
+- Index rebuilding is currently performed as a blocking background operation.
+- The current implementation is intended for local, single-user use.
+- Authentication and authorization are not included.
+- Conversation history is not persisted after a page refresh.
+- The application is not designed as a production multi-user deployment.
+
+## Development History
+
+The first working prototype used Streamlit to validate:
+
+- document upload,
+- OCR,
+- hybrid retrieval,
+- RAG generation,
+- source display,
+- retrieval debugging.
+
+The application was later migrated to FastAPI with a custom frontend to provide:
+
+- clearer frontend and backend separation,
+- explicit API endpoints,
+- better loading-state control,
+- better error handling,
+- document selection display,
+- index reset functionality,
+- protection against concurrent indexing and querying,
+- a more production-like case-study architecture.
+
+The final version contains one web interface based on FastAPI.
+
+A detailed development history and the reasoning behind technical decisions are
+available in `DEVLOG.md`.
+
+## Future Improvements
+
+- Per-document deletion
+- Background task queue for indexing
+- Real-time OCR and indexing progress
+- Neighboring chunk expansion
+- Layout-aware text extraction
+- Table-specific extraction
+- Metadata filters
+- Document-level search filters
+- Improved query normalization
+- Exact-label boosting
+- Reranking model
+- Persistent chat history
+- Docker support
+- Automated browser tests
+- Authentication
+- Multi-user index isolation
+- Production database integration
+
+## Documentation
+
+Additional project documentation:
+
+```text
+TESTING.md
+```
+
+Contains manual test cases, automated evaluation results, edge cases, and known
+testing gaps.
+
+```text
+DEVLOG.md
+```
+
+Contains development phases, architectural decisions, challenges, and technical
+trade-offs.
+
+## License
+
+This project was developed as a technical case study.

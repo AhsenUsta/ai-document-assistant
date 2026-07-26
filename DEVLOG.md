@@ -279,22 +279,20 @@ framework was later expanded substantially in Day 5.
 
 ## Day 5
 
-### Streamlit Web Interface
+### FastAPI Web Interface
 
-Implemented a Streamlit-based chat interface (`app.py`) to satisfy the
-case study's usability requirement.
+Replaced the initial Streamlit prototype with a FastAPI-based web
+application using HTML, CSS, and JavaScript.
 
 Main features added:
 
-- Automatic document indexing immediately after upload, removing the
-  previous manual "Save files and build index" step.
-- Dynamic document removal: deleted files are removed from `data/` and
-  the retrieval index is rebuilt (or cleared if no documents remain).
-- Chat-style interface using `st.chat_message` and `st.chat_input`,
-  including persistent conversation history and a "Clear conversation"
-  button.
-- Retrieval debug mode showing retrieved chunks, sources, and
-  semantic/BM25/RRF scores for troubleshooting.
+- REST API for document upload and question answering.
+- Automatic document indexing after upload.
+- Dynamic document removal and index rebuilding.
+- Browser-based chat interface.
+- Retrieval debug information showing retrieved chunks, sources,
+  and semantic/BM25/RRF scores.
+- Loading indicators during indexing and answer generation.
 
 ### Robust Retrieval Initialization
 
@@ -307,17 +305,16 @@ a missing cache and allowing `generate_answer()` to return an
 informative "no documents indexed yet" message instead of raising an
 exception.
 
-### Streamlit Cache Issue
+### FastAPI Retrieval Reload
 
-While implementing incremental indexing, I discovered that
-`st.cache_resource` was unsuitable for this use case.
+After documents are uploaded or removed, the retrieval components are
+reloaded automatically.
 
-Although newly uploaded documents were indexed correctly on disk,
-Streamlit continued serving stale retrieval objects from memory.
-Replacing the cache mechanism with an explicit
-`st.session_state["rag_initialized"]` flag together with a manual
-`reload_retrieval_components()` call made the indexing behaviour fully
-predictable.
+A dedicated reload function refreshes the FAISS index, BM25 index,
+metadata, and cached retrieval objects without restarting the server.
+
+This keeps the web interface synchronized with the current document
+collection.
 
 ### Retrieval Limitation: Large Documents
 
@@ -387,7 +384,7 @@ multilingual "not found" responses.
 
 ### Next Steps
 
-- Record the demonstration video.
+- Add background indexing.
 - Add per-source result capping to prevent large documents dominating
   retrieval.
 - Implement table-aware extraction (`pdfplumber` / `camelot` for
@@ -403,7 +400,8 @@ pipeline into a multilingual RAG assistant supporting:
 - OCR for PDFs and images
 - Hybrid retrieval (semantic + BM25)
 - Local LLM answering via Ollama
-- Streamlit chat interface
+- FastAPI web application
+- HTML/CSS/JavaScript frontend
 - Incremental document indexing
 - Automated evaluation framework
 - Multilingual fallback handling
@@ -609,3 +607,18 @@ The current implementation evolved successfully through testing, but starting
 with stronger evaluation, diagnostics, table-aware extraction, and incremental
 indexing would have reduced rework and produced a more scalable architecture
 earlier.
+
+## Final Reflection
+
+This project evolved from a simple OCR prototype into a complete
+Retrieval-Augmented Generation application supporting multilingual
+documents, hybrid retrieval, OCR, automated evaluation, and a FastAPI
+web interface.
+
+Throughout development, I found that the most difficult problems were
+not related to the language model itself, but to document extraction,
+retrieval quality, and evaluation methodology.
+
+The final implementation provides a solid foundation for future
+improvements such as incremental indexing, table-aware extraction,
+reranking, and more advanced OCR techniques.

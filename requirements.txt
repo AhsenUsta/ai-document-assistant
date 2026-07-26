@@ -6,5 +6,7 @@ faiss-cpu
 numpy
 ollama
 rank-bm25
-streamlit
 langdetect
+fastapi
+uvicorn
+python-multipart

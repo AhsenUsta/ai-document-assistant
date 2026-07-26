@@ -570,19 +570,20 @@ Passed
 
 ---
 
-### Test 15 – Streamlit Conversation History
+### Test 15 – FastAPI Web Interface
 
 **Description**
 
-Verified that the chat interface preserves conversation history during
-a session and correctly clears it when requested.
+Verified that the FastAPI web interface correctly handles document uploads,
+indexing, and question answering.
 
 **Procedure**
 
-1. Ask multiple questions.
-2. Verify previous messages remain visible.
-3. Click **Clear conversation**.
-4. Verify the conversation history is removed.
+1. Open the application in the browser.
+2. Upload one or more documents.
+3. Wait for indexing to complete.
+4. Ask multiple questions.
+5. Verify answers and displayed source documents.
 
 **Status**
 
@@ -632,42 +633,23 @@ Passed
 
 ---
 
-## Summary of RAG/QA Limitations
+## Test 18 – Question During Indexing
 
-Testing across financial tables and a scanned invoice surfaced four
-distinct failure modes, in increasing order of severity:
+**Description**
 
-1. **False negatives** (Tests 5, 10) — correct information is present
-   in retrieved context, but the model responds "not found."
-2. **OCR extraction gaps** (Test 9) — dense, multi-section table
-   layouts are not fully captured during text extraction, so
-   information is unavailable before retrieval even begins.
-3. **Hallucination** (Tests 7, 8, 10) — the model fabricates plausible
-   but incorrect numbers, sometimes with invented reasoning/formulas,
-   rather than declining to answer.
-4. **Structured-document extraction limitations** (Tests 9) — invoice
-   fields located in dense table layouts are sometimes not extracted
-   correctly, preventing successful retrieval and answer generation.
+Verified that users cannot submit questions while documents are being indexed.
 
-These findings indicate that while the system performs reliably for
-narrative/descriptive text (Tests 1–4, 6), numeric extraction from
-dense tabular data is not currently reliable and would need dedicated
-handling (see `DEVLOG.md` for the scope decision on this) before being
-used for financial or invoice-processing use cases in production.
+**Expected**
 
-Overall, the system performs reliably on multilingual document
-retrieval and general question answering.
+The chat input is disabled until indexing completes.
 
-The remaining limitations are concentrated in three areas:
+**Status**
 
-- OCR quality for dense tables
-- Retrieval balance for highly imbalanced corpora
-- Numeric reasoning over partially extracted tables
+Passed
 
-These limitations are documented throughout this report and provide a
-clear roadmap for future improvements.
+---
 
-### Test 18 – OCR Resource Cleanup and Word Reconstruction
+### Test 19 – OCR Resource Cleanup and Word Reconstruction
 
 **Description**
 
@@ -690,3 +672,54 @@ Passed
 Explicit resource cleanup had no impact on OCR output while making the OCR
 pipeline more robust. Lowering the word-gap threshold improved word separation
 without introducing formatting regressions in the tested documents.
+
+---
+
+## Summary of RAG/QA Limitations
+
+Testing across financial tables and a scanned invoice surfaced three
+distinct failure modes, in increasing order of severity:
+
+1. **False negatives** (Tests 5, 10) — correct information is present
+   in retrieved context, but the model responds "not found."
+2. **OCR extraction gaps** (Test 9) — dense, multi-section table
+   layouts are not fully captured during text extraction, so
+   information is unavailable before retrieval even begins.
+3. **Hallucination** (Tests 7, 8, 10) — the model fabricates plausible
+   but incorrect numbers, sometimes with invented reasoning/formulas,
+   rather than declining to answer.
+
+These findings indicate that while the system performs reliably for
+narrative/descriptive text (Tests 1–4, 6), is not yet reliable enough 
+for production financial or invoice-processing use cases and would need dedicated
+handling (see `DEVLOG.md` for the scope decision on this) before being
+used for financial or invoice-processing use cases in production.
+
+Overall, the system performs reliably on multilingual document
+retrieval and general question answering.
+
+The remaining limitations are concentrated in three areas:
+
+- OCR quality for dense tables
+- Retrieval balance for highly imbalanced corpora
+- Numeric reasoning over partially extracted tables
+
+These limitations are documented throughout this report and provide a
+clear roadmap for future improvements.
+
+---
+
+## Overall Conclusion
+
+Testing confirmed that the application successfully supports:
+
+- Digital PDF processing
+- OCR-based document extraction
+- Hybrid retrieval (FAISS + BM25)
+- Local RAG generation with Ollama
+- FastAPI web interface
+- Multiple document uploads
+- Turkish and English question answering
+
+The remaining limitations are primarily related to OCR quality and complex
+tabular document layouts rather than the retrieval pipeline itself.

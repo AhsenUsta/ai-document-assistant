@@ -115,5 +115,74 @@ def main() -> None:
     print("=" * 60)
 
 
+def rebuild_index() -> dict:
+    total_start = time.perf_counter()
+
+    chunks = load_documents_from_folder(DATA_ROOT)
+
+    if not chunks:
+        raise ValueError("No chunks were generated.")
+
+    model_start = time.perf_counter()
+    model = SentenceTransformer(EMBEDDING_MODEL)
+
+    print(
+        f"[TIMING] model load: "
+        f"{time.perf_counter() - model_start:.3f}s"
+    )
+
+    embedding_start = time.perf_counter()
+    embeddings = create_embeddings(chunks, model)
+
+    print(
+        f"[TIMING] embedding generation: "
+        f"{time.perf_counter() - embedding_start:.3f}s"
+    )
+
+    index = create_faiss_index(embeddings)
+
+    save_start = time.perf_counter()
+
+    save_cache(
+        index=index,
+        chunks=chunks,
+        embedding_dimension=embeddings.shape[1],
+    )
+
+    print(
+        f"[TIMING] cache save: "
+        f"{time.perf_counter() - save_start:.3f}s"
+    )
+
+    indexed_files = sorted({
+        chunk["source"]
+        for chunk in chunks
+    })
+
+    total_duration = time.perf_counter() - total_start
+
+    print("=" * 60)
+    print(f"Chunks: {len(chunks)}")
+    print(f"Embedding shape: {embeddings.shape}")
+    print(f"FAISS vectors: {index.ntotal}")
+    print(f"Index saved: {INDEX_PATH}")
+    print(f"Chunks saved: {CHUNKS_PATH}")
+    print(f"Metadata saved: {META_PATH}")
+    print(f"[TIMING] indexer TOTAL: {total_duration:.3f}s")
+    print("=" * 60)
+
+    return {
+        "indexed_files": indexed_files,
+        "chunk_count": len(chunks),
+        "embedding_dimension": int(embeddings.shape[1]),
+        "faiss_vectors": int(index.ntotal),
+        "duration": round(total_duration, 3),
+    }
+
+
+def main() -> None:
+    rebuild_index()
+
+
 if __name__ == "__main__":
     main()
