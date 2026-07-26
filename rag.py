@@ -1,16 +1,53 @@
 import ollama
 from sentence_transformers import SentenceTransformer
 from search import create_bm25, hybrid_search,load_cache
+from langdetect import detect
+
 
 from config import (
-    TOP_K, 
+    TOP_K,
+    MAX_CONTEXTS,
     MODEL_NAME,
     EMBEDDING_MODEL
 )
 
-embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-faiss_index, document_chunks = load_cache()
-bm25 = create_bm25(document_chunks)
+NOT_FOUND_TR = "Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı."
+NOT_FOUND_EN = "No relevant information was found in the uploaded documents."
+
+def detect_turkish(text: str) -> bool:
+    try:
+        return detect(text) == "tr"
+    except Exception:
+        return False
+        
+embedding_model = None
+faiss_index = None
+document_chunks = None
+bm25 = None
+
+def initialize_components(force_reload: bool = False) -> None:
+    global embedding_model, faiss_index, document_chunks, bm25
+
+    if embedding_model is None:
+        embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+
+    if (force_reload or faiss_index is None or document_chunks is None or bm25 is None):
+        try:
+            faiss_index, document_chunks, bm25 = load_cache()
+            return True
+        except FileNotFoundError:
+            faiss_index = None
+            document_chunks = None
+            bm25 = None
+            return False
+
+    return True
+    
+
+
+# Load components once when this module is first imported.
+initialize_components()
+
 
 def build_prompt(question: str, results: list[dict]) -> str:
     context_parts = []
@@ -40,7 +77,7 @@ Rules:
 - Pay close attention to which label each number belongs to.
 - If the answer is missing say:
 
-"I could not find the answer in the provided documents."
+"No relevant information was found in the uploaded documents."
 
 Never assume missing values are zero.
 
@@ -57,8 +94,16 @@ Answer:
 
 
 def generate_answer(question: str) -> dict:
-    results = hybrid_search(query=question, model=embedding_model, index=faiss_index, chunks=document_chunks, bm25=bm25, top_k=TOP_K,)
-
+    if faiss_index is None or document_chunks is None or bm25 is None:
+        return {
+            "question": question,
+            "answer": "No documents have been indexed yet. Please upload and index documents first.",
+            "sources": [],
+            "results": [],
+        }
+        
+    results = hybrid_search(query=question,model=embedding_model, index=faiss_index, chunks=document_chunks, bm25=bm25, top_k=TOP_K,)
+    # Drop chunks with negligible relevance before selecting context
     if not results:
         return {
             "question": question,
@@ -70,7 +115,8 @@ def generate_answer(question: str) -> dict:
             "results": [],
         }
 
-    prompt = build_prompt(question=question,results=results,)
+    selected_results = results[:MAX_CONTEXTS]
+    prompt = build_prompt(question=question,results=selected_results,)
 
     response = ollama.chat(
         model=MODEL_NAME,
@@ -83,14 +129,19 @@ def generate_answer(question: str) -> dict:
         stream=False,
         think=False,
         options={
-            "num_ctx": 2048,
+            "num_ctx": 4096,
             "temperature": 0,
             "top_p": 0.9,
         },
     )
 
     answer = response["message"]["content"].strip()
-
+    
+    if answer == NOT_FOUND_EN and detect_turkish(question):
+        answer = NOT_FOUND_TR
+    elif answer == NOT_FOUND_TR and not detect_turkish(question):
+        answer = NOT_FOUND_EN
+        
     sources = list(
         dict.fromkeys(
             result["source"]

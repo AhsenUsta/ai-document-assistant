@@ -1,5 +1,6 @@
 [
   {
+    "category": "retrieval",
     "question": "What is the supplier GSTIN?",
     "expected_source": "ocr_en_invoice_table.pdf",
     "expected_answer_contains": [
@@ -7,6 +8,39 @@
     ]
   },
   {
+    "category": "retrieval",
+    "question": "What is the invoice number?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "1234"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What is the invoice date?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "1/7/2017"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "Who is the consignee?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "RECEIVER COMPANY"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What is the place of supply?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "Haryana"
+    ]
+  },
+  {
+    "category": "retrieval",
     "question": "What is the IGST rate?",
     "expected_source": "ocr_en_invoice_table.pdf",
     "expected_answer_contains": [
@@ -14,6 +48,24 @@
     ]
   },
   {
+    "category": "retrieval",
+    "question": "How many pieces are listed in total?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "298"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What is the total invoice amount?",
+    "expected_source": "ocr_en_invoice_table.pdf",
+    "expected_answer_contains": [
+      "1,56,146.00"
+    ]
+  },
+
+  {
+    "category": "retrieval",
     "question": "COCO veri seti nedir?",
     "expected_source": "ocr_tr_production.png",
     "expected_answer_contains": [
@@ -22,10 +74,68 @@
     ]
   },
   {
-    "question": "COCO veri setinin lisans ücreti nedir?",
-    "expected_answer": "I could not find the answer in the provided documents."
+    "category": "retrieval",
+    "question": "COCO kaç nesne kategorisi içerir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "80"
+    ]
   },
   {
+    "category": "retrieval",
+    "question": "COCO veri setinde toplam kaç görüntü vardır?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "330K"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "Train2017 kaç görüntü içerir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "118.287"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "Val2017 kaç görüntü içerir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "5.000"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "Test2017 kaç görüntü içerir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "20.288"
+    ]
+  },
+
+  {
+    "category": "semantic",
+    "question": "COCO hangi görevlerde kullanılır?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "nesne algılama",
+      "segmentasyon"
+    ]
+  },
+  {
+    "category": "semantic",
+    "question": "COCO bilgisayarlı görü için neden önemlidir?",
+    "expected_source": "ocr_tr_production.png",
+    "expected_answer_contains": [
+      "330K",
+      "80 nesne",
+      "değerlendirme"
+    ]
+  },
+
+  {
+    "category": "semantic",
     "question": "TÜBİTAK'ın kuruluş amacı nedir?",
     "expected_source": "digital_tr_product_guide.pdf",
     "expected_answer_contains": [
@@ -35,11 +145,116 @@
     ]
   },
   {
+    "category": "retrieval",
+    "question": "TÜBİTAK hangi yıl kuruldu?",
+    "expected_source": "digital_tr_product_guide.pdf",
+    "expected_answer_contains": [
+      "1963"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "TÜBİTAK hangi kanun ile kurulmuştur?",
+    "expected_source": "digital_tr_product_guide.pdf",
+    "expected_answer_contains": [
+      "278"
+    ]
+  },
+  {
+    "category": "semantic",
+    "question": "TÜBİTAK bilim insanlarını nasıl destekler?",
+    "expected_source": "digital_tr_product_guide.pdf",
+    "expected_answer_contains": [
+      "burs",
+      "ödül"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "TÜBİTAK'ın en yüksek karar organı hangisidir?",
+    "expected_source": "digital_tr_product_guide.pdf",
+    "expected_answer_contains": [
+      "Bilim Kurulu"
+    ]
+  },
+
+  {
+    "category": "retrieval",
+    "question": "What sample volume is acceptable?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "100",
+      "120"
+    ]
+  },
+  {
+    "category": "semantic",
+    "question": "How should the bottle be filled?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "between the two lines"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What should you do if the bottle is overfilled?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "pour off"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What should not be written on the bottle?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "Do not write on the bottle"
+    ]
+  },
+  {
+    "category": "semantic",
     "question": "Sample custody nasıl sağlanır?",
     "expected_source": "digital_en_product_guide.pdf",
     "expected_answer_contains": [
-      "custody",
-      "Chain-of-Custody"
+      "Chain-of-Custody",
+      "sample"
     ]
+  },
+  {
+    "category": "retrieval",
+    "question": "How long should samples take to reach the laboratory?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "30 hours"
+    ]
+  },
+  {
+    "category": "retrieval",
+    "question": "What is the laboratory phone number?",
+    "expected_source": "digital_en_product_guide.pdf",
+    "expected_answer_contains": [
+      "573-751-3334"
+    ]
+  },
+
+  {
+    "category": "hallucination",
+    "question": "COCO veri setinin lisans ücreti nedir?",
+    "expected_answer": "I could not find the answer in the provided documents."
+  },
+  {
+    "category": "hallucination",
+    "question": "Invoice'daki müşteri telefonu nedir?",
+    "expected_answer": "I could not find the answer in the provided documents."
+  },
+  {
+    "category": "hallucination",
+    "question": "TÜBİTAK'ın 2025 bütçesi nedir?",
+    "expected_answer": "I could not find the answer in the provided documents."
+  },
+  {
+    "category": "hallucination",
+    "question": "Sample collection için kaç personel gerekir?",
+    "expected_answer": "I could not find the answer in the provided documents."
   }
 ]

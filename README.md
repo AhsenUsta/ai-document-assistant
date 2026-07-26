@@ -6,12 +6,14 @@ for question answering over PDF, PNG, and JPEG documents.
 ## Features
 
 - Digital PDF text extraction
-- OCR for scanned PDFs
-- OCR for PNG and JPG images
-- Turkish and English OCR support
+- OCR for scanned PDFs and images (Turkish and English)
 - Text chunking with overlap
-- Hybrid retrieval (BM25 + FAISS semantic search)
+- Hybrid retrieval (FAISS semantic search + BM25, combined via
+  Reciprocal Rank Fusion)
 - RAG-based natural language question answering (local LLM via Ollama)
+- Streamlit chat interface with conversation history
+- Incremental document indexing (add or remove files without restarting)
+- Retrieval debug mode (view sources, retrieved chunks, and similarity scores)
 - Automated evaluation harness for measuring retrieval and answer accuracy
 
 ## Requirements
@@ -21,7 +23,7 @@ for question answering over PDF, PNG, and JPEG documents.
 - [Ollama](https://ollama.com) installed and running
 - The following Ollama model pulled:
 ```bash
-ollama pull qwen3:1.7b
+ollama pull qwen3:8b
 ```
 
 **Note:** `TESSERACT_PATH` in `config.py` is set to `"tesseract"`, 
@@ -32,15 +34,17 @@ assuming Tesseract is available on your system PATH. If you get a
   tesseract executable (e.g., `C:\Program Files\Tesseract-OCR\tesseract.exe` 
   on Windows, or `/usr/bin/tesseract` on Linux/macOS).
 
-**Note:** `MODEL_NAME` defaults to `qwen3:1.7b` due to VRAM constraints 
-on the development machine (4GB GPU). See `DEVLOG.md` for the full 
-reasoning. Any locally available Ollama model can be used instead.
+**Note:** `MODEL_NAME` defaults to `qwen3:8b`. Earlier iterations used
+`qwen3:1.7b` due to VRAM constraints on the development machine (see
+`DEVLOG.md` for the full reasoning and trade-offs between model size,
+answer quality, and hallucination behavior). Any locally available
+Ollama model can be used instead — update `MODEL_NAME` in `config.py`.
 
 ## Installation
 
 ```bash
 pip install -r requirements.txt
-ollama pull qwen3:1.7b
+ollama pull qwen3:8b
 ```
 
 ## Usage
@@ -73,7 +77,19 @@ python search.py
 4. Ask questions and get LLM-generated answers:
 ```bash
 python rag.py
+
 ```
+### Web interface
+
+```bash
+streamlit run app.py
+```
+
+Upload documents from the sidebar — they are indexed automatically.
+Ask questions in the chat box. Toggle "Show retrieval details" to see
+sources, retrieved chunks, and similarity scores for each answer.
+Removing a file from the upload list also removes it from the index
+and rebuilds the cache.
 
 ## RAG Pipeline
 
@@ -115,7 +131,7 @@ python search.py
 
 The application returns:
 
-- similarity score
+- similarity score (hybrid, semantic, and BM25)
 - source document
 - relevant document chunks
 
@@ -128,6 +144,7 @@ cache/
 ├── faiss.index
 ├── chunks.pkl
 └── metadata.json
+└── bm25.pkl
 ```
 
 ## Configuration
@@ -137,13 +154,20 @@ The following values can be changed in `config.py`:
 ```python
 CHUNK_SIZE = 600
 CHUNK_OVERLAP = 100
-TOP_K = 5
-MODEL_NAME = "qwen3:1.7b"
+TOP_K = 15
+MAX_CONTEXTS = 5
+MODEL_NAME = "qwen3:8b"
 EMBEDDING_MODEL = (
     "sentence-transformers/"
     "paraphrase-multilingual-mpnet-base-v2"
 )
 ```
+`TOP_K` and `MAX_CONTEXTS` are deliberately separate: retrieval casts
+a wider net (`TOP_K`) to reduce the chance of missing a relevant chunk
+ranked lower by either the semantic or lexical scorer, while
+`MAX_CONTEXTS` keeps only the top candidates in the LLM's context to
+avoid diluting it with lower-relevance chunks.
+
 Hybrid search parameters (BM25/semantic weighting, RRF constants) are
 defined in `search.py`'s `hybrid_search` function.
 
@@ -183,6 +207,7 @@ This runs the test cases defined in `evaluation.json` and reports:
 - **Answer Accuracy** — whether the generated answer matches the
   expected value or contains the expected keywords
 
-A detailed report is written to `evaluation_report.json`. See
-`TESTING.md` for a summary of current results (Source Hit@K: 100%,
-Answer Accuracy: 83.33%) and known limitations.
+A detailed report is written to `evaluation_report.json`. The current
+benchmark consists of 32 automated test cases. See `TESTING.md` for
+the latest benchmark results and a discussion of the system's known
+limitations.

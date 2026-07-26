@@ -11,6 +11,8 @@ from config import (
     EMBEDDING_MODEL,
     INDEX_PATH,
     TOP_K,
+    CACHE_ROOT,
+    BM25_PATH,
 )
 
 def tokenize(text: str) -> list[str]:
@@ -30,8 +32,8 @@ def create_bm25(chunks: list[dict]) -> BM25Okapi:
 
     return BM25Okapi(tokenized_chunks)
 
-def load_cache() -> tuple[faiss.Index, list[dict]]:
-    """Load FAISS index and document chunks from disk."""
+def load_cache() -> tuple[faiss.Index, list[dict], BM25Okapi]:
+    """Load FAISS index, document chunks, and BM25 index from disk."""
     if not INDEX_PATH.exists():
         raise FileNotFoundError(f"FAISS index could not be found: {INDEX_PATH}")
 
@@ -46,8 +48,14 @@ def load_cache() -> tuple[faiss.Index, list[dict]]:
     if index.ntotal != len(chunks):
         raise ValueError(f"FAISS vector count and chunk count do not match. Vectors: {index.ntotal}, chunks: {len(chunks)}")
 
-    return index, chunks
+    if BM25_PATH.exists():
+        with BM25_PATH.open("rb") as file:
+            bm25 = pickle.load(file)
+    else:
+        # Fallback for older cache versions without a saved BM25 index
+        bm25 = create_bm25(chunks)
 
+    return index, chunks, bm25
 
 def semantic_search(query: str,model: SentenceTransformer,index: faiss.Index,chunks: list[dict],top_k: int = TOP_K,) -> list[dict]:
     """Return the most relevant chunks for a query."""
@@ -158,8 +166,7 @@ def main() -> None:
     print(f"[TIMING] model load: {time.perf_counter() - model_start:.3f}s")
 
     cache_start = time.perf_counter()
-    index, chunks = load_cache()
-    bm25 = create_bm25(chunks)
+    index, chunks, bm25 = load_cache()
 
     print(f"[TIMING] cache load: {time.perf_counter() - cache_start:.3f}s")
     

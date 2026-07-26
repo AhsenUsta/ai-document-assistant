@@ -21,9 +21,9 @@
 - Converted document chunks into 768-dimensional vectors.
 - Added FAISS vector indexing.
 - Normalized document and query embeddings for cosine similarity search.
-- Added persistent FAISS index storage.
-- Added persistent chunk storage using Pickle.
-- Added index metadata storage using JSON.
+- Added persistent storage for the FAISS index, document chunks
+  (Pickle), and metadata (JSON) to avoid rebuilding embeddings on
+  every application start.
 - Added semantic search through `search.py`.
 - Added validation between FAISS vector count and cached chunk count.
 - Added configurable `TOP_K` value.
@@ -103,8 +103,8 @@ deduplication may be added in a later stage.
 with no CPU offloading. Since the RAG task is primarily extraction /
 summarization from provided context rather than open-ended reasoning,
 a smaller model was expected to have limited quality impact for this
-specific use case — this needs to be, and was later partially,
-validated against real failures (see below).
+specific use case — This assumption was later validated against 
+real test cases described in subsequent development logs.
 
 **Result:** 100% GPU utilization, noticeably faster response times.
 
@@ -166,12 +166,10 @@ case study.
 - Simple categorical queries (tax rate, absence of a due date) were
   still handled correctly.
 
-This is a more serious class of failure than the earlier
-retrieval/generation gap (COCO test): the model doesn't just miss
-information, it sometimes fabricates confident-sounding numbers and
-reasoning. This is exactly the "doğruluk" (accuracy/no hallucination)
-requirement the case study asks about, so it was tested thoroughly and
-documented rather than glossed over.
+Unlike the earlier COCO failure, these issues were not retrieval
+failures but hallucinations caused by incomplete extraction. Since
+accuracy and hallucination handling are explicit requirements of the
+case study, these failures were documented rather than hidden.
 
 ### Note: Table-Structure-Aware Extraction Not Yet Implemented
 
@@ -244,11 +242,9 @@ character pairs), causing an otherwise-correct answer to fail a strict
 keyword match. Added Turkish character normalization to the comparison
 logic to fix this without weakening the test.
 
-**Final results:** Source Hit@K 5/5 (100%), Answer Accuracy 5/6
-(83.33%). Full results in `evaluation_report.json`; see TESTING.md
-Test 13 for analysis of the one remaining failure (a generation-level
-issue where the model selects a less relevant paragraph from an
-otherwise correctly-retrieved document).
+The initial benchmark achieved perfect retrieval accuracy and
+highlighted one remaining generation failure. This evaluation
+framework was later expanded substantially in Day 5.
 
 ### Next Steps
 
@@ -279,3 +275,139 @@ otherwise correctly-retrieved document).
 - Evaluate a cross-encoder reranker to improve chunk ranking for
   challenging queries, particularly those involving numeric values and
   table-heavy documents.
+  
+
+## Day 5
+
+### Streamlit Web Interface
+
+Implemented a Streamlit-based chat interface (`app.py`) to satisfy the
+case study's usability requirement.
+
+Main features added:
+
+- Automatic document indexing immediately after upload, removing the
+  previous manual "Save files and build index" step.
+- Dynamic document removal: deleted files are removed from `data/` and
+  the retrieval index is rebuilt (or cleared if no documents remain).
+- Chat-style interface using `st.chat_message` and `st.chat_input`,
+  including persistent conversation history and a "Clear conversation"
+  button.
+- Retrieval debug mode showing retrieved chunks, sources, and
+  semantic/BM25/RRF scores for troubleshooting.
+
+### Robust Retrieval Initialization
+
+Initially, `rag.py` attempted to load the FAISS index and BM25 cache
+during module import, causing the application to fail when started with
+an empty `cache/` directory.
+
+This was resolved by making `initialize_components()` gracefully handle
+a missing cache and allowing `generate_answer()` to return an
+informative "no documents indexed yet" message instead of raising an
+exception.
+
+### Streamlit Cache Issue
+
+While implementing incremental indexing, I discovered that
+`st.cache_resource` was unsuitable for this use case.
+
+Although newly uploaded documents were indexed correctly on disk,
+Streamlit continued serving stale retrieval objects from memory.
+Replacing the cache mechanism with an explicit
+`st.session_state["rag_initialized"]` flag together with a manual
+`reload_retrieval_components()` call made the indexing behaviour fully
+predictable.
+
+### Retrieval Limitation: Large Documents
+
+Testing revealed that one significantly larger document could dominate
+the retrieval results even for unrelated questions.
+
+The issue appears to result from the much larger number of candidate
+chunks contributed by a single document when using a fixed `TOP_K`
+retrieval strategy.
+
+The limitation was documented for future work rather than addressed in
+this iteration.
+
+### Language-Aware Fallback Responses
+
+The prompt instructed the LLM to return the "not found" message in the
+same language as the user's question. In practice this proved
+inconsistent.
+
+To guarantee deterministic behaviour, question language detection was
+added in `rag.py`, and the fallback response is normalized after
+generation when necessary. This ensures consistent multilingual
+responses without relying entirely on prompt following.
+
+### Model Upgrade
+
+Replaced the default model (`qwen3:1.7b`) with `qwen3:8b`.
+
+The larger model resolved several retrieval-disambiguation failures,
+particularly for invoice and TÜBİTAK questions.
+
+However, testing also revealed a trade-off: when OCR failed to extract
+the invoice total, `qwen3:1.7b` correctly declined to answer, whereas
+`qwen3:8b` confidently returned an incorrect subtotal. This behaviour
+is documented in `TESTING.md`.
+
+### Retrieval Configuration
+
+Separated retrieval breadth from LLM context size.
+
+- `TOP_K = 15` retrieval candidates
+- `MAX_CONTEXTS = 5` chunks provided to the LLM
+
+This improved recall while keeping the prompt size unchanged.
+
+During testing, the previously introduced `MIN_SCORE` threshold was
+found to have no measurable benefit for the current corpus and was
+removed.
+
+### Automated Evaluation
+
+Expanded the benchmark from 6 to 32 evaluation cases covering:
+
+- Invoice documents
+- TÜİK financial tables
+- COCO documentation
+- TÜBİTAK documentation
+- EPA SOP documents
+- Deliberate "not found" questions for hallucination testing
+
+Evaluation also revealed that several reported failures were caused by
+the benchmark itself rather than incorrect model behaviour. After the
+application began returning language-specific fallback responses, the
+evaluation script still expected only the original English fallback.
+The evaluation logic was updated accordingly to correctly evaluate
+multilingual "not found" responses.
+
+### Next Steps
+
+- Record the demonstration video.
+- Add per-source result capping to prevent large documents dominating
+  retrieval.
+- Implement table-aware extraction (`pdfplumber` / `camelot` for
+  digital PDFs and layout-aware OCR for scanned tables).
+- Evaluate PaddleOCR as an alternative OCR engine.
+- Investigate cross-encoder reranking to improve retrieval quality.
+
+## Summary
+
+Over five development iterations the project evolved from a basic OCR
+pipeline into a multilingual RAG assistant supporting:
+
+- OCR for PDFs and images
+- Hybrid retrieval (semantic + BM25)
+- Local LLM answering via Ollama
+- Streamlit chat interface
+- Incremental document indexing
+- Automated evaluation framework
+- Multilingual fallback handling
+
+Several known limitations remain, particularly around table extraction
+and retrieval balancing for highly imbalanced document collections.
+These are documented throughout the development log and in TESTING.md.

@@ -5,6 +5,7 @@ import time
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from search import create_bm25
 
 from config import (
     CACHE_ROOT,
@@ -15,6 +16,7 @@ from config import (
     EMBEDDING_MODEL,
     INDEX_PATH,
     META_PATH,
+    BM25_PATH,
 )
 from loaddocs import load_documents_from_folder
 
@@ -68,6 +70,11 @@ def save_cache(index: faiss.Index,chunks: list[dict],embedding_dimension: int,) 
 
     with META_PATH.open("w", encoding="utf-8") as file:
         json.dump(metadata, file, ensure_ascii=False, indent=4)
+    
+    # Persist the BM25 index so it doesn't need to be rebuilt on every load
+    bm25 = create_bm25(chunks)
+    with (BM25_PATH).open("wb") as file:
+        pickle.dump(bm25, file)
 
 
 def main() -> None:

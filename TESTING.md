@@ -5,6 +5,21 @@ retrieval, and question-answering pipeline of the project.
 
 ---
 
+## Test Environment
+
+- Embedding model:
+  `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`
+- Retrieval:
+  Hybrid Search (Semantic + BM25 using Reciprocal Rank Fusion)
+- LLM:
+  qwen3:8b (Ollama)
+- OCR:
+  Tesseract OCR
+- Evaluation:
+  32 automated benchmark questions
+  
+---
+
 ## Test 1 – Digital English PDF
 
 **Expected**
@@ -137,7 +152,8 @@ collection form and instructional diagrams.
   `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`
 - Embedding dimension: `768`
 - Number of indexed chunks: `136`
-- Default `TOP_K`: `5`
+- Default `TOP_K`: `15` (candidate retrieval)
+- `MAX_CONTEXTS`: `5` (contexts passed to the LLM)
 - Search engine: `FAISS`
 - Similarity method: cosine similarity through normalized vectors
 
@@ -189,7 +205,7 @@ Passed
 ## RAG / Question-Answering Tests
 
 ### Environment
-- LLM: `qwen3:1.7b` (via Ollama)
+- LLM: `qwen3:8b` (via Ollama)
 - `num_ctx`: 2048
 - `temperature`: 0.1
 
@@ -236,11 +252,11 @@ in the same session return correct, non-mixed answers.
 **Status**
 Passed
 
-**Observation:** The second answer was returned in English even though
-the question was asked in Turkish. The system appears to follow the
-source document's language rather than the question's language. This
-is a behavioral note, not a failure — may be worth addressing in the
-prompt if consistent question-language responses are required.
+**Observation**
+The assistant now consistently answers in the language of the user's
+question, even when the retrieved document is written in another
+language. This behavior is enforced through language detection and
+post-generation fallback normalization.
 
 ---
 
@@ -280,9 +296,9 @@ documents," despite the correct information being present in context.
   the small model's (qwen3:1.7b) confidence in extracting the correct
   number, causing it to default to the "not found" fallback defined in
   the prompt.
-- Not tested: whether a larger model (qwen3:4b) would resolve this;
-  VRAM constraints on the development machine prevented this
-  comparison.
+- Additional testing with qwen3:8b showed that a larger model improves
+some OCR-related extraction failures, although generation failures can
+still occur when OCR quality is severely degraded.
 
 **Status**
 Known limitation — documented, not resolved in this iteration.
@@ -297,7 +313,7 @@ requested information does not exist in any document.
 
 **Query:** "COCO veri setinin lisans ücreti nedir?"
 
-**Answer:** "I could not find the answer in the provided documents."
+**Answer:** The assistant returned the language-appropriate "not found" message.
 
 **Status**
 Passed — the system correctly avoided hallucinating a fabricated
@@ -453,6 +469,7 @@ other (e.g., paired totals like active/passive, income/expense).
 | "Personel giderleri ne kadardır?" | Correct, but the answer chunk ranked last (5th) among mostly irrelevant retrieval results | Correct |
 | "What is the supplier GSTIN?" | "Not found," despite the correct value being present in the top-ranked chunk (a generation-level disambiguation failure — three similar GSTIN/UIN codes appear in the same chunk) | Correct (17ABCDEF123GXYZ) |
 | "What is the IGST rate?" | Retrieval failed entirely (invoice not retrieved for this specific phrasing) | Correct (12%), invoice retrieved at rank 1 |
+| "COCO veri setinin lisans ücreti nedir?" | English fallback | Language-aware fallback |
 
 **Status**
 Passed — prompt refinement, combined with the hybrid search fix,
@@ -460,53 +477,164 @@ resolved all four previously-failing queries above.
 
 ---
 
-### Test 13 – Automated Evaluation Harness
+## Test 13 – Expanded Automated Evaluation
 
-**Motivation**
-Manual before/after testing (Tests 7-12) was informative but not
-easily repeatable. Built an automated evaluation harness
-(`evaluate.py` + `evaluation.json`) to systematically and repeatably
-measure retrieval and answer accuracy across a fixed set of test
-cases, rather than relying on ad-hoc manual comparisons.
+### Motivation
 
-**Metrics measured:**
-- **Source Hit@K** — whether the correct source document was
-  retrieved.
-- **Answer Accuracy** — whether the generated answer matches the
-  expected answer (exact-contains match) or expected keywords
-  (contains-all match).
+After validating the evaluation framework on an initial benchmark,
+the benchmark was expanded to better measure retrieval, answer quality,
+and hallucination handling across different document types.
 
-**Initial run:** 4/6 passed (66.67%). One failure
-("COCO veri seti nedir?") was found to be a false negative in the
-evaluation script itself: the actual answer was correct, but differed
-from the expected keyword only in Turkish character representation
-("algılama" vs. OCR-degraded "algilama"). Added Turkish character
-normalization (ı/i, ş/s, ğ/g, ü/u, ö/o, ç/c) to the evaluation
-comparison logic to tolerate this kind of OCR-induced variation
-without weakening the underlying test.
+### Test Set
 
-**Final run:**
-- **Source Hit@K: 5/5 (100%)** — retrieval reliably surfaces the
-  correct document across all test cases where source was checked.
-- **Answer Accuracy: 5/6 (83.33%)**
+The benchmark consists of **32 questions** covering:
 
-**Remaining failure:** "TÜBİTAK'ın kuruluş amacı nedir?" — the retrieval pipeline 
-successfully retrieved the correct source document, but the
-LLM answers using a different section of the document instead of the
-section describing the founding purpose. This is a generation-level
-issue rather than a retrieval failure.
+- OCR invoice
+- COCO documentation
+- TÜBİTAK documentation
+- EPA SOP
+- Deliberate "not found" questions
+
+Questions include:
+
+- Fact retrieval
+- Semantic understanding
+- Numeric extraction
+- Hallucination detection
+
+### Metrics
+
+- Overall Accuracy
+- Answer Accuracy
+- Source Hit@K
+
+### Results
+
+| Metric | Result |
+|--------|--------|
+| Total tests | 32 |
+| Overall Accuracy | 68.75% |
+| Answer Accuracy | 68.75% |
+| Source Hit@K | 96.30% |
+| Errors | 1 |
+
+### Analysis
+
+The evaluation highlights a clear distinction between retrieval quality
+and answer generation quality.
+
+Retrieval performed consistently, achieving **96.30% Source Hit@K**,
+indicating that the hybrid retrieval pipeline usually selected the
+correct source document.
+
+Most failures occurred during answer generation rather than retrieval.
+
+The main failure patterns were:
+
+- OCR extraction limitations in complex invoice layouts.
+- Failure to extract specific fields despite correct retrieval.
+- Strict keyword matching (e.g., synonymous wording such as
+  "bölütleme" instead of "segmentasyon").
+- One runtime CUDA/Ollama error unrelated to the retrieval pipeline.
+
+The benchmark also confirmed that multilingual fallback handling works
+correctly. All deliberate "not found" questions returned the
+language-appropriate fallback message without hallucinating answers.
+
+### Conclusion
+
+The evaluation demonstrates that retrieval is largely reliable, while
+remaining weaknesses are concentrated in OCR quality and answer
+generation for complex structured documents rather than document
+selection itself.
+
+---
+
+### Test 14 – Incremental Document Indexing
+
+**Description**
+
+Verified that newly uploaded documents are indexed automatically and
+that removing a document updates the retrieval index accordingly.
+
+**Procedure**
+
+1. Upload Document A and verify it can be queried.
+2. Upload Document B and verify both documents are retrievable.
+3. Remove Document A.
+4. Verify that answers are generated only from Document B.
 
 **Status**
-Known limitation — full results and raw output available in
-`evaluation_report.json`. This evaluation harness provides 
-a reproducible benchmark for future retrieval, 
-prompt, and generation improvements.
+
+Passed
+
+---
+
+### Test 15 – Streamlit Conversation History
+
+**Description**
+
+Verified that the chat interface preserves conversation history during
+a session and correctly clears it when requested.
+
+**Procedure**
+
+1. Ask multiple questions.
+2. Verify previous messages remain visible.
+3. Click **Clear conversation**.
+4. Verify the conversation history is removed.
+
+**Status**
+
+Passed
+
+---
+
+### Test 16 – Language-Aware Fallback Responses
+
+**Description**
+
+Verified that the assistant returns the fallback message in the same
+language as the user's question when the requested information is not
+present in the indexed documents.
+
+**Procedure**
+
+| Query | Expected |
+|--------|----------|
+| Turkish question with no matching information | Turkish fallback message |
+| English question with no matching information | English fallback message |
+
+**Status**
+
+Passed
+
+**Observation**
+
+The fallback language is determined consistently through language
+detection and post-generation normalization, independent of the
+language of the retrieved documents.
+
+---
+
+### Test 17 – Retrieval Debug Information
+
+**Description**
+
+Verified that enabling retrieval debug mode displays the retrieved
+chunks, source documents, and retrieval scores without affecting the
+generated answer. This mode is intended for development and evaluation 
+rather than end-user usage.
+
+**Status**
+
+Passed
 
 ---
 
 ## Summary of RAG/QA Limitations
 
-Testing across financial tables and a scanned invoice surfaced three
+Testing across financial tables and a scanned invoice surfaced four
 distinct failure modes, in increasing order of severity:
 
 1. **False negatives** (Tests 5, 10) — correct information is present
@@ -517,9 +645,24 @@ distinct failure modes, in increasing order of severity:
 3. **Hallucination** (Tests 7, 8, 10) — the model fabricates plausible
    but incorrect numbers, sometimes with invented reasoning/formulas,
    rather than declining to answer.
+4. **Structured-document extraction limitations** (Tests 9) — invoice
+   fields located in dense table layouts are sometimes not extracted
+   correctly, preventing successful retrieval and answer generation.
 
 These findings indicate that while the system performs reliably for
 narrative/descriptive text (Tests 1–4, 6), numeric extraction from
 dense tabular data is not currently reliable and would need dedicated
 handling (see `DEVLOG.md` for the scope decision on this) before being
 used for financial or invoice-processing use cases in production.
+
+Overall, the system performs reliably on multilingual document
+retrieval and general question answering.
+
+The remaining limitations are concentrated in three areas:
+
+- OCR quality for dense tables
+- Retrieval balance for highly imbalanced corpora
+- Numeric reasoning over partially extracted tables
+
+These limitations are documented throughout this report and provide a
+clear roadmap for future improvements.

@@ -35,6 +35,14 @@ def normalize_text(text: str) -> str:
 
     return normalized.casefold()
 
+ENGLISH_FALLBACKS = {
+    normalize_text("I could not find the answer in the provided documents."),
+    normalize_text("No relevant information was found in the uploaded documents."),
+}
+
+TURKISH_FALLBACKS = {
+    normalize_text("Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı."),
+}
 
 def load_evaluation_cases() -> list[dict[str, Any]]:
     if not EVALUATION_FILE.exists():
@@ -81,6 +89,15 @@ def load_evaluation_cases() -> list[dict[str, Any]]:
 def check_answer(test_case: dict[str, Any],actual_answer: str,) -> tuple[bool, str]:
     normalized_actual = normalize_text(actual_answer)
 
+    # Hallucination tests
+    if test_case.get("expected_source") is None:
+        passed = any(
+            fallback in normalized_actual
+            for fallback in ENGLISH_FALLBACKS | TURKISH_FALLBACKS
+        )
+
+        return (passed,"Document not found fallback",)
+        
     if "expected_answer" in test_case:
         expected_answer = str(test_case["expected_answer"])
         normalized_expected = normalize_text(expected_answer)
