@@ -778,6 +778,11 @@ async function clearDocuments() {
 
     } finally {
         setApplicationBusy(false);
+		
+		clearDocumentsButton.textContent =
+            "Clear Documents";
+
+        clearDocumentsButton.disabled = true;
     }
 }
 

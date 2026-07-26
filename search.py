@@ -169,8 +169,6 @@ def main() -> None:
     index, chunks, bm25 = load_cache()
 
     print(f"[TIMING] cache load: {time.perf_counter() - cache_start:.3f}s")
-    
-    print(f"[TIMING] cache load: {time.perf_counter() - cache_start:.3f}s")
 
     print(f"Loaded vectors: {index.ntotal}")
     print(f"Loaded chunks: {len(chunks)}")

@@ -76,45 +76,6 @@ def save_cache(index: faiss.Index,chunks: list[dict],embedding_dimension: int,) 
     with (BM25_PATH).open("wb") as file:
         pickle.dump(bm25, file)
 
-
-def main() -> None:
-    total_start = time.perf_counter()
-
-    chunks = load_documents_from_folder(DATA_ROOT)
-
-    if not chunks:
-        print("No chunks were generated.")
-        return
-
-    model_start = time.perf_counter()
-    model = SentenceTransformer(EMBEDDING_MODEL)
-
-    print(f"[TIMING] model load: {time.perf_counter() - model_start:.3f}s")
-
-    embedding_start = time.perf_counter()
-    embeddings = create_embeddings(chunks, model)
-
-    print(f"[TIMING] embedding generation: {time.perf_counter() - embedding_start:.3f}s")
-
-    index = create_faiss_index(embeddings)
-
-    save_start = time.perf_counter()
-
-    save_cache(index=index,chunks=chunks,embedding_dimension=embeddings.shape[1], )
-
-    print(f"[TIMING] cache save: {time.perf_counter() - save_start:.3f}s")
-
-    print("=" * 60)
-    print(f"Chunks: {len(chunks)}")
-    print(f"Embedding shape: {embeddings.shape}")
-    print(f"FAISS vectors: {index.ntotal}")
-    print(f"Index saved: {INDEX_PATH}")
-    print(f"Chunks saved: {CHUNKS_PATH}")
-    print(f"Metadata saved: {META_PATH}")
-    print(f"[TIMING] indexer TOTAL: {time.perf_counter() - total_start:.3f}s")
-    print("=" * 60)
-
-
 def rebuild_index() -> dict:
     total_start = time.perf_counter()
 

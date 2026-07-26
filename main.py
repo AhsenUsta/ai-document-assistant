@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import shutil
 import rag
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
