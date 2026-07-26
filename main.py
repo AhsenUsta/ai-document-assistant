@@ -6,13 +6,11 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from config import CHUNKS_PATH, INDEX_PATH
+from config import CHUNKS_PATH, INDEX_PATH, CACHE_ROOT, DATA_ROOT, STATIC_DIR
 from indexer import rebuild_index
 
 
 BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-DATA_DIR = BASE_DIR / "data"
 
 ALLOWED_EXTENSIONS = {
     ".pdf",
@@ -22,7 +20,7 @@ ALLOWED_EXTENSIONS = {
 }
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+DATA_ROOT.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title="AI Document Assistant",
@@ -99,7 +97,7 @@ async def upload_documents(
                     detail=f"Unsupported file type: {filename}",
                 )
 
-            destination = DATA_DIR / filename
+            destination = DATA_ROOT / filename
 
             content = await uploaded_file.read()
             destination.write_bytes(content)
@@ -220,4 +218,55 @@ async def ask_question(
         raise HTTPException(
             status_code=500,
             detail=f"Question answering failed: {exc}",
+        ) from exc
+
+def delete_directory_contents(directory: Path) -> int:
+    """
+    Deletes every file and folder inside the given directory,
+    while preserving the directory itself.
+    """
+    if not directory.exists():
+        return 0
+
+    deleted_count = 0
+
+    for item in directory.iterdir():
+        try:
+            if item.is_file() or item.is_symlink():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
+
+            deleted_count += 1
+
+        except OSError as exc:
+            raise RuntimeError(
+                f"Could not delete '{item.name}': {exc}"
+            ) from exc
+
+    return deleted_count
+
+
+@app.delete("/documents/clear")
+async def clear_documents():
+    try:
+        deleted_documents = delete_directory_contents(DATA_ROOT)
+        deleted_index_files = delete_directory_contents(CACHE_ROOT)
+
+        # Clear in-memory retrieval components.
+        rag.faiss_index = None
+        rag.document_chunks = None
+        rag.bm25 = None
+
+        return {
+            "success": True,
+            "message": "All documents and index files were cleared.",
+            "deleted_documents": deleted_documents,
+            "deleted_index_files": deleted_index_files,
+        }
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Documents could not be cleared: {exc}",
         ) from exc

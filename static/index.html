@@ -52,13 +52,21 @@
 					</div>
 				</div>
 
-				<button
-					id="uploadButton"
-					class="primary-button"
-					type="button">
-					Upload & Index
-				</button>
-
+				<div class="document-actions">
+					<button id="uploadButton"
+						class="primary-button"
+						type="button">
+						Upload & Index
+					</button>
+					<br>
+					<button
+						id="clearDocumentsButton"
+						class="primary-button"
+						type="button"
+					>
+						Clear Documents
+					</button>
+				</div>
 				<div
 					id="uploadStatus"
 					class="status-message"
@@ -111,32 +119,6 @@
                         Upload one or more documents, wait for indexing to finish,
                         and ask questions in Turkish or English.
                     </p>
-
-                    <div class="example-grid">
-                        <button
-                            class="example-question"
-                            type="button"
-                            data-question="What is the main topic of the document?"
-                        >
-                            What is the main topic?
-                        </button>
-
-                        <button
-                            class="example-question"
-                            type="button"
-                            data-question="Summarize the indexed documents."
-                        >
-                            Summarize the documents
-                        </button>
-
-                        <button
-                            class="example-question"
-                            type="button"
-                            data-question="Bu dokümandaki en önemli bilgiler nelerdir?"
-                        >
-                            En önemli bilgiler nelerdir?
-                        </button>
-                    </div>
                 </div>
             </section>
 

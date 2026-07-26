@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).parent
 
 DATA_ROOT = BASE_DIR / "data"
 CACHE_ROOT = BASE_DIR / "cache"
+STATIC_DIR = BASE_DIR / "static"
 
 # -------------------------
 # CHUNKING

@@ -11,6 +11,12 @@ const clearChatButton = document.getElementById("clearChatButton");
 
 const exampleButtons = document.querySelectorAll(".example-question");
 
+const clearDocumentsButton = document.getElementById(
+    "clearDocumentsButton"
+);
+
+const documentList = document.getElementById("documentList");
+
 let isIndexing = false;
 let isAnswering = false;
 
@@ -20,6 +26,7 @@ let isAnswering = false;
 --------------------------------------------------------- */
 
 uploadButton.disabled = true;
+clearDocumentsButton.disabled = true;
 
 
 /* ---------------------------------------------------------
@@ -153,7 +160,8 @@ uploadButton.addEventListener("click", async () => {
         );
 
         showIndexedDocuments(indexedFiles);
-
+		clearDocumentsButton.disabled = indexedFiles.length === 0;
+		
         documentInput.value = "";
         selectedFiles.innerHTML = "";
 
@@ -552,32 +560,6 @@ function addWelcomeCard() {
                 indexing to finish, and ask questions
                 in Turkish or English.
             </p>
-
-            <div class="example-grid">
-                <button
-                    class="example-question dynamic-example"
-                    type="button"
-                    data-question="What is the main topic of the document?"
-                >
-                    What is the main topic?
-                </button>
-
-                <button
-                    class="example-question dynamic-example"
-                    type="button"
-                    data-question="Summarize the indexed documents."
-                >
-                    Summarize the documents
-                </button>
-
-                <button
-                    class="example-question dynamic-example"
-                    type="button"
-                    data-question="Bu dokümandaki en önemli bilgiler nelerdir?"
-                >
-                    En önemli bilgiler nelerdir?
-                </button>
-            </div>
         </div>
     `;
 
@@ -672,4 +654,137 @@ async function readJsonResponse(response) {
             responseText ||
             `Server returned HTTP ${response.status}.`,
     };
+}
+
+function setApplicationBusy(isBusy) {
+    if (clearDocumentsButton) {
+        clearDocumentsButton.disabled = isBusy;
+    }
+
+    if (questionInput) {
+        questionInput.disabled = isBusy;
+    }
+
+    if (sendButton) {
+        sendButton.disabled = isBusy;
+    }
+
+    if (documentInput) {
+        documentInput.disabled = isBusy;
+    }
+
+    if (uploadButton) {
+        uploadButton.disabled = isBusy;
+    }
+}
+
+/* ---------------------------------------------------------
+   CLEAR DOCUMENTS
+--------------------------------------------------------- */
+
+function setApplicationBusy(isBusy) {
+    clearDocumentsButton.disabled = isBusy;
+    documentInput.disabled = isBusy;
+    questionInput.disabled = isBusy;
+    sendButton.disabled = isBusy;
+    clearChatButton.disabled = isBusy;
+
+    if (isBusy) {
+        clearDocumentsButton.textContent = "Clearing...";
+    } else {
+        clearDocumentsButton.textContent = "Clear Documents";
+
+        uploadButton.disabled =
+            documentInput.files.length === 0;
+    }
+
+    for (const button of exampleButtons) {
+        button.disabled = isBusy;
+    }
+}
+
+
+async function clearDocuments() {
+    if (isIndexing || isAnswering) {
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "All uploaded documents and generated indexes will be deleted. Continue?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    setApplicationBusy(true);
+
+    setUploadStatus(
+        "Clearing documents and indexes...",
+        ""
+    );
+
+    try {
+        const response = await fetch("/documents/clear", {
+            method: "DELETE",
+            headers: {
+                Accept: "application/json",
+            },
+        });
+
+        const result = await readJsonResponse(response);
+
+        if (!response.ok) {
+            throw new Error(
+                result.detail ||
+                "Documents could not be cleared."
+            );
+        }
+
+        documentInput.value = "";
+        selectedFiles.innerHTML = "";
+
+        const emptyMessage =
+            document.createElement("div");
+
+        emptyMessage.className =
+            "selected-files-empty";
+
+        emptyMessage.textContent =
+            "No file selected.";
+
+        selectedFiles.appendChild(emptyMessage);
+
+        setUploadStatus(
+            `${result.deleted_documents ?? 0} document(s) cleared successfully.`,
+            "success"
+        );
+		clearDocumentsButton.disabled = true;
+		
+        chatMessages.innerHTML = "";
+        addWelcomeCard();
+
+    } catch (error) {
+        console.error(
+            "Clear documents error:",
+            error
+        );
+
+        setUploadStatus(
+            error.message ||
+            "An unexpected error occurred.",
+            "error"
+        );
+
+    } finally {
+        setApplicationBusy(false);
+    }
+}
+
+
+if (clearDocumentsButton) {
+    clearDocumentsButton.addEventListener(
+        "click",
+        clearDocuments
+    );
 }

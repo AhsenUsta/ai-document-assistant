@@ -443,6 +443,16 @@ elif gap > 2:
 ↓
 elif gap > 0.5:
 ```
+### Clear Documents Feature
+
+Added a **Clear Documents** action to the FastAPI web interface.
+
+The feature removes all uploaded documents and cached retrieval data,
+resets in-memory RAG components, and prepares the application for a new
+indexing session without requiring a server restart.
+
+This simplifies repeated testing by allowing the document collection to
+be cleared directly from the web interface.
 
 ## What I Would Do Differently If I Started Again
 
