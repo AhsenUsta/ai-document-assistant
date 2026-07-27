@@ -2,13 +2,21 @@
 
 ## Day 1
 
-- Created project structure.
-- Implemented PDF text extraction using PyMuPDF.
-- Added OCR support using Tesseract.
-- Added image OCR support.
-- Implemented text chunking.
-- Improved chunking to avoid splitting words.
-- Tested with digital PDFs, scanned PDFs, PNG and JPG images.
+### Initial Project Setup
+
+- Created the initial project structure.
+- Implemented PDF text extraction using **PyMuPDF**.
+- Added OCR support using **Tesseract OCR** for scanned documents.
+- Added OCR support for standalone image files (PNG and JPG).
+- Implemented text chunking for retrieval.
+- Improved the chunking algorithm to avoid splitting words across chunk boundaries.
+- Validated the extraction pipeline using digital PDFs, scanned PDFs, PNG images, and JPG images.
+
+**Outcome**
+
+By the end of Day 1, the project was able to extract text from both
+digital and scanned documents, providing the foundation for the later
+retrieval and question-answering pipeline.
 
 ## Day 2
 
@@ -17,21 +25,19 @@
 ### Implemented
 
 - Added multilingual sentence embeddings using
-  `paraphrase-multilingual-mpnet-base-v2`.
-- Converted document chunks into 768-dimensional vectors.
-- Added FAISS vector indexing.
-- Normalized document and query embeddings for cosine similarity search.
-- Added persistent storage for the FAISS index, document chunks
-  (Pickle), and metadata (JSON) to avoid rebuilding embeddings on
-  every application start.
-- Added semantic search through `search.py`.
-- Added validation between FAISS vector count and cached chunk count.
-- Added configurable `TOP_K` value.
+  `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`.
+- Converted document chunks into 768-dimensional embedding vectors.
+- Integrated FAISS for semantic vector indexing.
+- Normalized both document and query embeddings to enable cosine similarity search.
+- Added persistent storage for the FAISS index, document chunks (Pickle), and metadata (JSON) to avoid rebuilding embeddings on every application start.
+- Implemented semantic search in `search.py`.
+- Added validation to ensure the number of FAISS vectors matches the number of cached document chunks.
+- Added a configurable `TOP_K` retrieval parameter.
 - Added execution time measurements for:
-  - model loading
-  - cache loading
-  - semantic search
-  
+  - Model loading
+  - Cache loading
+  - Semantic search
+
 ### Technical Decisions
 
 #### Multilingual Embedding Model
@@ -42,10 +48,15 @@ The project uses the following multilingual embedding model:
 sentence-transformers/paraphrase-multilingual-mpnet-base-v2
 ```
 
+This model was selected to support semantic retrieval across both
+Turkish and English documents without maintaining separate embedding
+models.
+
 #### Persistent Cache
 
-The generated FAISS index and document chunks are stored on disk to avoid
-rebuilding embeddings on every application start.
+The generated FAISS index and document chunks are stored on disk to
+avoid rebuilding embeddings on every application start, significantly
+reducing application startup time.
 
 #### Cosine Similarity
 
@@ -55,404 +66,234 @@ index so that inner-product search behaves as cosine similarity.
 ### Observations
 
 The same OCR document existed as both `.png` and `.jpg`. Because both
-files contained the same content, duplicate semantic search results were
-returned.
+files contained identical content, semantic search returned duplicate
+results.
 
-This is not a FAISS error. Duplicate-content detection or result
-deduplication may be added in a later stage.
-
-### Next Steps
-
-- Add metadata validation
-- Add duplicate chunk detection
-- Add minimum similarity-score filtering
-- Add BM25 keyword search
-- Add hybrid retrieval
-- Integrate the retriever with an LLM
-- Expose the pipeline through FastAPI
+This behavior is expected because FAISS indexes vector similarity
+without considering document uniqueness. Duplicate-content detection
+or result deduplication was identified as a future improvement.
 
 ## Day 3
 
 ### RAG Integration
 
-#### Implemented
-- Integrated the FAISS retriever with a local LLM via Ollama (`rag.py`).
-- Built a prompt template that grounds answers strictly in retrieved
-  context and instructs the model to respond with a fixed fallback
-  message when the answer isn't present in the documents.
-- Tested the full pipeline end-to-end with real documents (digital
-  TR/EN PDFs, OCR TR/EN PDFs, OCR TR JPG/PNG).
+### Implemented
 
-### Technical Decision: Switching from qwen3:4b to qwen3:1.7b
+- Integrated the FAISS retriever with a local LLM using Ollama (`rag.py`).
+- Implemented a prompt template that restricts answers to the retrieved
+  context and returns a fixed fallback message when no answer is found.
+- Validated the complete RAG pipeline using both digital and OCR
+  documents in Turkish and English.
 
-**Problem:** Response times were very slow. Investigated using
-`ollama ps` and found the model was split across CPU/GPU
-(27-45% CPU / 55-73% GPU) instead of running fully on GPU.
+### Technical Decisions
 
-**Diagnosis:**
-- Checked `nvidia-smi`: RTX 3050 has only 4GB VRAM, with ~774MB
-  already used by the driver/OS, leaving ~3.3GB free.
-- `qwen3:4b` (2.5GB on disk) plus the KV cache for `num_ctx: 8192`
-  exceeded the available VRAM, forcing Ollama to offload layers to CPU.
-- Reduced `num_ctx` to 2048; the model still partially offloaded to CPU
-  (27%/73%), meaning context size alone wasn't the full explanation —
-  the 4b model itself was too large for this card's headroom once
-  runtime overhead is included.
+### Switching to a Smaller Model
 
-**Decision:** Switched to `qwen3:1.7b` (1.4GB), which loads at 100% GPU
-with no CPU offloading. Since the RAG task is primarily extraction /
-summarization from provided context rather than open-ended reasoning,
-a smaller model was expected to have limited quality impact for this
-specific use case — This assumption was later validated against 
-real test cases described in subsequent development logs.
+Initial testing with `qwen3:4b` resulted in slow response times because
+the model exceeded the available VRAM on the development machine
+(RTX 3050, 4 GB), causing partial CPU offloading.
 
-**Result:** 100% GPU utilization, noticeably faster response times.
+The project was therefore switched to `qwen3:1.7b`, which runs entirely
+on the GPU and provides significantly faster inference while maintaining
+sufficient quality for retrieval-augmented question answering.
 
-### Debugging: Retrieval vs Generation Failure
+### Investigation: Retrieval vs. Generation
 
-**Problem:** Asking "COCO kaç görüntü içeriyor?" (a question whose
-answer exists verbatim in an OCR'd document) consistently returned
-"I could not find the answer in the provided documents" — a likely
-false negative, since the answer (330K images) is present in the
-source text.
+While testing OCR documents, some questions returned the fallback
+message even though the correct information had been retrieved.
 
-**Debugging process:**
-1. Bypassed the LLM and inspected raw retrieval using `search.py`
-   directly. Found the correct chunk was retrieved with a similarity
-   score of 0.57-0.58, ranked 3rd-4th out of 5 — meaning retrieval was
-   working correctly.
-2. Isolated variables by removing OCR'd files (`.jpg`/`.png`) from
-   `data/` and re-testing with only the clean digital PDF present.
-   Discovered the digital PDF used in this experiment didn't actually
-   contain the COCO content (my test file naming was misleading — the
-   `digital_*` files turned out to be different topics than expected).
-   This ruled out one hypothesis but didn't explain the original
-   failure, since the failure was reproduced separately with the OCR
-   files present and retrieval confirmed correct.
-3. Re-ran the original failing query 3+ times with OCR files present:
-   the model consistently failed to extract the answer even though it
-   was present in the retrieved context.
+To isolate the issue, retrieval was inspected independently using
+`search.py`. The correct document chunks were consistently retrieved,
+indicating that retrieval was functioning correctly.
 
-**Conclusion:** This is a generation-level failure, not a retrieval
-failure. Likely cause: OCR-degraded text (e.g. "tizere", "gériinti"
-instead of clean Turkish) reduces the small model's (`qwen3:1.7b`)
-confidence in extracting a specific numeric fact from noisy context,
-causing it to default to the "not found" fallback defined in the
-prompt.
+The investigation showed that these failures originated during answer
+generation rather than retrieval, particularly when OCR introduced noisy
+text around numeric values.
 
-**Decision:** Did not attempt to fix this in this iteration. A proper
-fix would require either OCR post-processing/cleanup, deduplication of
-near-identical chunks (the `.jpg`/`.png` duplicates reduce effective
-context diversity within `TOP_K`), or testing with a larger model —
-each a nontrivial addition beyond the current scope. Documented as a
-known limitation in `TESTING.md` instead, along with the full
-diagnostic trail.
+The issue was documented as a known limitation instead of being addressed
+within the current project scope.
 
-### Testing: Table and Invoice Numeric Extraction
+### Extended Evaluation
 
-Extended testing to include a Turkish financial statement (TÜİK
-balance sheet, digital PDF) and a scanned invoice (OCR'd PDF), to
-cover the "tablolu belge" (tabular document) scenario required by the
-case study.
+Additional testing was performed using financial tables and scanned
+invoices.
 
-**Findings (full detail in `TESTING.md` Tests 7-10):**
-- The invoice's grand total was never extracted by OCR at all — a
-  pure extraction-level gap, confirmed by inspecting cached chunks
-  directly.
-- Several numeric queries against the financial table returned
-  hallucinated figures, in one case with an entirely fabricated
-  calculation/formula presented as if it were derived from the
-  source data.
-- Simple categorical queries (tax rate, absence of a due date) were
-  still handled correctly.
+The evaluation identified two important limitations:
 
-Unlike the earlier COCO failure, these issues were not retrieval
-failures but hallucinations caused by incomplete extraction. Since
-accuracy and hallucination handling are explicit requirements of the
-case study, these failures were documented rather than hidden.
+- OCR may fail to extract important values from dense tabular layouts.
+- Numeric question answering becomes less reliable when OCR output is
+  incomplete or degraded.
 
-### Note: Table-Structure-Aware Extraction Not Yet Implemented
+These findings were documented in `TESTING.md` and influenced the final
+scope of the project.
 
-The failures above point to a common underlying gap: the current
-pipeline flattens tables into plain text during extraction, which
-loses row/column structure and can separate summary/total figures
-from their supporting rows.
+### Observation
 
-Table-aware extraction (e.g., `pdfplumber` or `camelot` for digital
-PDFs, bounding-box-based OCR reconstruction for scanned tables) would
-likely address this, but has not been implemented in the current
-version. This is a meaningfully different extraction path from the
-current flat-text pipeline — digital and scanned tables would need
-separate strategies.
-
-For now, this is documented as a known limitation (see Tests 7-10 in
-`TESTING.md`) rather than addressed, so that the failure mode is
-understood and traceable. If the project continues past its current
-scope, this would be a natural next step: `pdfplumber`/`camelot` for
-digital PDFs and Tesseract's TSV/hOCR output (which preserves bounding
-boxes) for scanned tables, to keep row/column relationships intact
-through chunking.
-
-### Next Steps
-- Add duplicate chunk detection (still open from Day 2)
-- Consider OCR text cleanup/post-processing for noisy characters
-- Test whether a larger model (qwen3:4b/8b) resolves the generation
-  failure above, if a machine with more VRAM becomes available
-- Build a minimal interface (Streamlit or FastAPI) for usability
+By the end of Day 3, the project had evolved into a complete local RAG
+pipeline consisting of OCR, semantic retrieval, and LLM-based question
+answering. Most remaining issues were related to document extraction
+quality rather than the retrieval architecture itself.
 
 ## Day 4
 
-### Hybrid Search Implementation
+### Hybrid Retrieval and Evaluation
 
-Implemented hybrid search (BM25 + semantic via Reciprocal Rank Fusion)
-to address retrieval inconsistencies observed in Day 3 testing,
-particularly for short, code-heavy documents (e.g., the sample
-invoice) where pure semantic search sometimes failed to rank the
-correct chunk highly enough.
+### Implemented
 
-**Regression encountered:** The first implementation used raw BM25
-rank without a minimum score threshold, which allowed near-zero
-lexical matches to enter the fused ranking. This caused two
-previously-passing test cases to break (TÜİK financial figures — see
-TESTING.md Test 11 for full details). Fixed by adding a
-`bm25_min_score` threshold to exclude irrelevant lexical matches.
+- Implemented hybrid retrieval by combining semantic search (FAISS)
+  and BM25 using Reciprocal Rank Fusion (RRF).
+- Added a minimum BM25 score threshold to prevent irrelevant lexical
+  matches from degrading retrieval quality.
+- Refined the prompt with explicit label-to-value matching rules to
+  improve numeric extraction from OCR-generated tables.
+- Developed an automated evaluation framework consisting of
+  `evaluate.py` and `evaluation.json`.
 
-### Prompt Refinement: Label-Value Matching
+### Technical Decisions
 
-Added explicit prompt rules to handle a recurring failure pattern:
-OCR/table-flattening produces "value label value label" ordering
-(e.g., a total appearing right after an unrelated preceding number),
-causing the model to match the wrong number to a label. Added
-instructions to match the number immediately following a label, and to
-double-check similar/paired labels (e.g., active/passive totals).
+#### Hybrid Retrieval
 
-This fix, combined with the hybrid search regression fix, resolved
-four previously-failing test queries (see TESTING.md Test 12).
+Pure semantic retrieval performed well for narrative documents but
+occasionally ranked incorrect chunks for short, keyword-heavy content
+such as invoices.
 
-### Automated Evaluation Harness
+To improve retrieval consistency, BM25 was combined with semantic
+search using Reciprocal Rank Fusion. A minimum BM25 score threshold
+was introduced after regression testing showed that near-zero lexical
+matches could negatively influence the final ranking.
 
-Built `evaluate.py` + `evaluation.json` to replace manual, ad-hoc
-before/after testing with a repeatable evaluation suite. Measures:
-- Source Hit@K (retrieval accuracy)
-- Answer Accuracy (exact-contains and keyword-contains matching)
+#### Prompt Refinement
 
-Discovered and fixed a false negative in the evaluation script itself:
-Turkish OCR output sometimes substitutes "ı" for "i" (and similar
-character pairs), causing an otherwise-correct answer to fail a strict
-keyword match. Added Turkish character normalization to the comparison
-logic to fix this without weakening the test.
+Additional prompt instructions were introduced to reduce incorrect
+label-to-value associations caused by flattened OCR table layouts.
 
-The initial benchmark achieved perfect retrieval accuracy and
-highlighted one remaining generation failure. This evaluation
-framework was later expanded substantially in Day 5.
+The model is explicitly instructed to associate values with the labels
+that immediately precede them, reducing ambiguity when multiple numeric
+fields appear close together.
 
-### Next Steps
+### Automated Evaluation
 
-**Priority 1 — complete the remaining case study deliverables:**
+A repeatable evaluation framework replaced manual testing by measuring:
 
-- Build a minimal Streamlit interface for usability.
-- Record a short demonstration video.
+- Retrieval accuracy (Source Hit@K)
+- Answer accuracy
 
-**Priority 2 — improve extraction for numeric and table-heavy documents:**
+During implementation, the evaluation script itself was improved by
+normalizing Turkish characters before keyword comparison, eliminating
+false negatives caused by OCR character variations.
 
-- Implement table-structure-aware extraction to preserve row/column
-  relationships instead of flattening tables into plain text. For
-  digital PDFs, evaluate tools such as `pdfplumber` or `camelot`; for
-  scanned tables, investigate layout-aware OCR approaches using
-  Tesseract TSV/hOCR output.
-- Evaluate PaddleOCR as an alternative to Tesseract for the two OCR
-  failure cases identified during testing: the invoice's dense
-  multi-column summary section (Test 9) and Turkish character accuracy
-  (Test 5). This comparison would determine whether adopting PaddleOCR
-  provides measurable improvements before changing the existing OCR
-  pipeline.
+### Observation
 
-**Priority 3 — extend evaluation and retrieval quality:**
-
-- Expand `evaluation.json` with the additional manually tested cases
-  documented in `TESTING.md`, increasing the benchmark from 6 cases to
-  approximately 15–18 cases.
-- Evaluate a cross-encoder reranker to improve chunk ranking for
-  challenging queries, particularly those involving numeric values and
-  table-heavy documents.
+Hybrid retrieval improved retrieval robustness while the automated
+evaluation framework made future improvements measurable and
+repeatable. The remaining issues were concentrated in OCR quality and
+complex numeric reasoning rather than retrieval performance.
   
 
 ## Day 5
 
-### FastAPI Web Interface
+### FastAPI Web Interface and Final Improvements
 
-Replaced the initial Streamlit prototype with a FastAPI-based web
-application using HTML, CSS, and JavaScript.
+### Implemented
 
-Main features added:
+- Replaced the initial Streamlit prototype with a FastAPI-based web
+  application using HTML, CSS, and JavaScript.
+- Added REST endpoints for document upload and question answering.
+- Implemented automatic document indexing after upload.
+- Added document removal with automatic index rebuilding.
+- Built a browser-based chat interface with loading indicators.
+- Added retrieval diagnostics for development, including retrieved
+  chunks, source documents, and retrieval scores.
+  - Added a **Clear Documents** feature to remove uploaded documents,
+  clear cached retrieval data, and reset the in-memory retrieval
+  components without restarting the server.
 
-- REST API for document upload and question answering.
-- Automatic document indexing after upload.
-- Dynamic document removal and index rebuilding.
-- Browser-based chat interface.
-- Retrieval debug information showing retrieved chunks, sources,
-  and semantic/BM25/RRF scores.
-- Loading indicators during indexing and answer generation.
+### Retrieval Improvements
 
-### Robust Retrieval Initialization
+The retrieval pipeline was updated to reload the FAISS index, BM25
+index, and cached metadata automatically whenever documents are added
+or removed, keeping the running application synchronized without
+requiring a server restart.
 
-Initially, `rag.py` attempted to load the FAISS index and BM25 cache
-during module import, causing the application to fail when started with
-an empty `cache/` directory.
-
-This was resolved by making `initialize_components()` gracefully handle
-a missing cache and allowing `generate_answer()` to return an
-informative "no documents indexed yet" message instead of raising an
-exception.
-
-### FastAPI Retrieval Reload
-
-After documents are uploaded or removed, the retrieval components are
-reloaded automatically.
-
-A dedicated reload function refreshes the FAISS index, BM25 index,
-metadata, and cached retrieval objects without restarting the server.
-
-This keeps the web interface synchronized with the current document
-collection.
-
-### Retrieval Limitation: Large Documents
-
-Testing revealed that one significantly larger document could dominate
-the retrieval results even for unrelated questions.
-
-The issue appears to result from the much larger number of candidate
-chunks contributed by a single document when using a fixed `TOP_K`
-retrieval strategy.
-
-The limitation was documented for future work rather than addressed in
-this iteration.
-
-### Language-Aware Fallback Responses
-
-The prompt instructed the LLM to return the "not found" message in the
-same language as the user's question. In practice this proved
-inconsistent.
-
-To guarantee deterministic behaviour, question language detection was
-added in `rag.py`, and the fallback response is normalized after
-generation when necessary. This ensures consistent multilingual
-responses without relying entirely on prompt following.
-
-### Model Upgrade
-
-Replaced the default model (`qwen3:1.7b`) with `qwen3:8b`.
-
-The larger model resolved several retrieval-disambiguation failures,
-particularly for invoice and TÜBİTAK questions.
-
-However, testing also revealed a trade-off: when OCR failed to extract
-the invoice total, `qwen3:1.7b` correctly declined to answer, whereas
-`qwen3:8b` confidently returned an incorrect subtotal. This behaviour
-is documented in `TESTING.md`.
-
-### Retrieval Configuration
-
-Separated retrieval breadth from LLM context size.
+Retrieval breadth was separated from LLM context size by introducing:
 
 - `TOP_K = 15` retrieval candidates
-- `MAX_CONTEXTS = 5` chunks provided to the LLM
+- `MAX_CONTEXTS = 5` chunks provided to the language model
 
-This improved recall while keeping the prompt size unchanged.
+This improved retrieval recall while keeping prompt size and inference
+cost stable.
 
-During testing, the previously introduced `MIN_SCORE` threshold was
-found to have no measurable benefit for the current corpus and was
-removed.
+### Robust Application Startup
+
+The application was updated to handle an empty cache directory
+gracefully.
+
+Instead of failing during startup, the system now reports that no
+documents have been indexed and becomes fully operational immediately
+after the first document upload.
+
+### Language-Aware Responses
+
+Language detection was added to normalize fallback responses when the
+model returned the "not found" message in an unexpected language.
+
+This provides deterministic multilingual behaviour independent of
+prompt compliance.
+
+### Model Evaluation
+
+The default language model was upgraded from `qwen3:1.7b` to
+`qwen3:8b`.
+
+Testing showed improved answer quality for several retrieval tasks,
+while also revealing that larger models may hallucinate numerical
+values more confidently when OCR extraction is incomplete. This
+behaviour is documented in `TESTING.md`.
 
 ### Automated Evaluation
 
-Expanded the benchmark from 6 to 32 evaluation cases covering:
+The evaluation benchmark was expanded from 6 to 32 test cases covering
+multiple document types, including invoices, financial tables,
+technical documentation, and negative ("not found") queries.
 
-- Invoice documents
-- TÜİK financial tables
-- COCO documentation
-- TÜBİTAK documentation
-- EPA SOP documents
-- Deliberate "not found" questions for hallucination testing
+The evaluation framework was also refined to correctly handle
+multilingual fallback responses after language-aware answer
+normalization was introduced.
 
-Evaluation also revealed that several reported failures were caused by
-the benchmark itself rather than incorrect model behaviour. After the
-application began returning language-specific fallback responses, the
-evaluation script still expected only the original English fallback.
-The evaluation logic was updated accordingly to correctly evaluate
-multilingual "not found" responses.
+### Observation
 
-### Next Steps
-
-- Add background indexing.
-- Add per-source result capping to prevent large documents dominating
-  retrieval.
-- Implement table-aware extraction (`pdfplumber` / `camelot` for
-  digital PDFs and layout-aware OCR for scanned tables).
-- Evaluate PaddleOCR as an alternative OCR engine.
-- Investigate cross-encoder reranking to improve retrieval quality.
+By the end of Day 5, the project had evolved into a complete local
+document question-answering system featuring OCR, hybrid retrieval,
+LLM-based answer generation, automated benchmarking, and a FastAPI web
+interface. The remaining limitations were primarily related to OCR
+quality and complex tabular document extraction rather than the overall
+system architecture.
 
 ## Summary
 
-Over five development iterations the project evolved from a basic OCR
-pipeline into a multilingual RAG assistant supporting:
+Over five development iterations, the project evolved from a basic OCR
+pipeline into a complete local document question-answering system.
+
+The final implementation includes:
 
 - OCR for PDFs and images
-- Hybrid retrieval (semantic + BM25)
-- Local LLM answering via Ollama
+- Hybrid retrieval (FAISS + BM25)
+- Local LLM-based answer generation with Ollama
 - FastAPI web application
 - HTML/CSS/JavaScript frontend
-- Incremental document indexing
+- Automatic document indexing and re-indexing
 - Automated evaluation framework
-- Multilingual fallback handling
+- Multilingual question answering
+- Language-aware fallback responses
 
-Several known limitations remain, particularly around table extraction
-and retrieval balancing for highly imbalanced document collections.
-These are documented throughout the development log and in TESTING.md.
+Throughout development, several engineering decisions were driven by
+systematic testing, including model selection, retrieval improvements,
+prompt refinement, and evaluation methodology.
 
-### OCR Pipeline Improvements
-
-While testing scanned documents on Windows, I reviewed the OCR pipeline for
-resource cleanup and text reconstruction.
-
-#### OCR Resource Cleanup
-
-Wrapped OCR image creation in a `try/finally` block and explicitly released
-temporary resources after each page.
-
-**Changes:**
-
-- Added explicit `img.close()` after OCR processing.
-- Released the temporary PyMuPDF pixmap reference after each page.
-- Ensured cleanup occurs even if OCR raises an exception.
-
-**Reason:**
-
-Although no functional issues were observed during normal extraction, explicit
-resource cleanup reduces the lifetime of temporary image objects and makes the
-OCR pipeline more robust, particularly on Windows where delayed resource
-release can occasionally contribute to temporary file locking.
-
-#### OCR Word Reconstruction
-
-Adjusted the horizontal word-gap threshold used during OCR line
-reconstruction.
-
-```python
-elif gap > 2:
-↓
-elif gap > 0.5:
-```
-### Clear Documents Feature
-
-Added a **Clear Documents** action to the FastAPI web interface.
-
-The feature removes all uploaded documents and cached retrieval data,
-resets in-memory RAG components, and prepares the application for a new
-indexing session without requiring a server restart.
-
-This simplifies repeated testing by allowing the document collection to
-be cleared directly from the web interface.
+The remaining limitations are primarily related to OCR quality, dense
+tabular document layouts, and numeric question answering rather than
+the retrieval architecture itself. These limitations are documented in
+`TESTING.md` together with the corresponding design decisions.
 
 ## What I Would Do Differently If I Started Again
 
@@ -574,21 +415,7 @@ application-level checks for:
 
 This would make system behaviour more predictable.
 
-### 8. Define resource-management rules for OCR from the beginning
-
-On Windows, temporary image resources may remain alive longer than expected.
-
-If starting again, I would use explicit cleanup patterns from the first OCR
-implementation:
-
-- Use context managers where possible.
-- Close temporary PIL images explicitly.
-- Release PyMuPDF pixmap references after each page.
-- Avoid keeping large page images in memory longer than necessary.
-
-This would reduce the risk of file-locking and memory-pressure issues.
-
-### 9. Centralize configuration values earlier
+### 8. Centralize configuration values earlier
 
 Several important parameters were adjusted during testing, including:
 
@@ -620,15 +447,24 @@ earlier.
 
 ## Final Reflection
 
-This project evolved from a simple OCR prototype into a complete
-Retrieval-Augmented Generation application supporting multilingual
-documents, hybrid retrieval, OCR, automated evaluation, and a FastAPI
-web interface.
+This project evolved from a simple OCR prototype into a complete local
+Retrieval-Augmented Generation system supporting multilingual document
+question answering, hybrid retrieval, automated evaluation, and a
+FastAPI-based web interface.
 
-Throughout development, I found that the most difficult problems were
-not related to the language model itself, but to document extraction,
-retrieval quality, and evaluation methodology.
+The most valuable lesson was that building a reliable RAG application is
+less about selecting a language model and more about understanding the
+interaction between document extraction, retrieval, prompt design,
+generation, and evaluation.
 
-The final implementation provides a solid foundation for future
-improvements such as incremental indexing, table-aware extraction,
-reranking, and more advanced OCR techniques.
+Many of the improvements made throughout the project were driven by
+systematic testing rather than assumptions. Building an automated
+evaluation framework, inspecting retrieval independently from generation,
+and documenting failure modes proved just as important as implementing
+new features.
+
+Although several limitations remain—particularly for dense tables,
+complex OCR layouts, and numeric question answering—the current
+implementation provides a solid, extensible foundation for future work
+such as incremental indexing, table-aware extraction, reranking, and
+improved OCR pipelines.

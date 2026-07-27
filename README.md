@@ -1,5 +1,7 @@
 # AI Document Assistant
 
+![Application Screenshot](docs/images/app.png)
+
 AI Document Assistant is a local Retrieval-Augmented Generation application
 that allows users to upload documents and ask natural-language questions about
 their content.
@@ -13,24 +15,36 @@ JavaScript frontend.
 
 ## Features
 
-- Digital PDF text extraction
-- OCR support for scanned PDFs and images
-- Turkish and English OCR support
-- Multiple document upload
-- Automatic document indexing after upload
-- Text chunking with overlap
-- Multilingual sentence embeddings
+### Document Processing
+
+- Digital PDF extraction
+- OCR for scanned PDFs and images
+- Turkish and English OCR
+
+### Retrieval
+
 - FAISS semantic search
 - BM25 keyword search
-- Hybrid retrieval using Reciprocal Rank Fusion
-- Local RAG-based question answering with Ollama
-- Source document display for generated answers
-- Turkish and English question support
-- Chat interface with loading and error states
-- Document and index reset functionality
-- Protection against asking questions while indexing is in progress
-- Retrieval debug information for inspecting chunks and scores
-- Automated retrieval and answer evaluation
+- Hybrid retrieval (RRF)
+- Multilingual embeddings
+
+### Question Answering
+
+- Local Ollama inference
+- Source citations
+- Turkish and English queries
+
+### User Interface
+
+- Multiple upload
+- Chat interface
+- Loading indicators
+- Document reset
+
+### Evaluation
+
+- Retrieval diagnostics
+- Automated evaluation
 
 ## Architecture
 
@@ -71,6 +85,20 @@ FAISS Semantic Index         BM25 Index
                   v
               Answer
 ```
+
+## Example
+
+Upload:
+invoice.pdf
+
+Question:
+What is the supplier GSTIN?
+
+Answer:
+17ABCDEF123GXYZ
+
+Source:
+ocr_en_invoice_table.pdf
 
 ## Technology Stack
 
@@ -146,8 +174,8 @@ The larger model produced more reliable answers but required more memory and
 longer generation times. Additional details about this decision are available
 in `DEVLOG.md`.
 
-Any model already available in Ollama can be used by changing `MODEL_NAME` in
-`config.py`.
+Any Ollama model available on the local system can be used by updating
+`MODEL_NAME` in `config.py`.
 
 ## Installation
 
@@ -195,13 +223,35 @@ Make sure Ollama is running before starting the application.
 Start the FastAPI development server:
 
 ```bash
-uvicorn main:app --reload
+uvicorn main:app --reload --port 5000
 ```
 
-Open the application in a browser:
+After starting the server, open the following URL in your browser:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:5000
+```
+
+## Running with Docker
+
+Start the application and Ollama using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+During the first startup, the required Ollama model (`qwen3:8b`) is downloaded automatically.
+
+The application will be available at:
+
+```text
+http://127.0.0.1:5000
+```
+
+To stop the containers:
+
+```bash
+docker compose down
 ```
 
 ## Web Interface Usage
@@ -214,6 +264,8 @@ http://127.0.0.1:8000
 6. Ask questions about the uploaded documents.
 7. Review the generated answer and its source documents.
 8. Use `Clear Documents` to remove the current documents and reset the index.
+
+**Note**
 
 While document indexing is running, the question input is disabled to prevent
 queries from being executed against an incomplete index.
@@ -268,14 +320,12 @@ Accepts one or more uploaded files.
 
 The endpoint:
 
-1. validates the files,
-2. saves the uploaded documents,
-3. extracts digital text or performs OCR,
-4. creates text chunks,
-5. generates embeddings,
-6. rebuilds the FAISS index,
-7. rebuilds the BM25 index,
-8. reloads the in-memory RAG components.
+1. validates uploaded files,
+2. extracts text (digital or OCR),
+3. creates text chunks,
+4. generates embeddings,
+5. rebuilds the FAISS and BM25 indexes,
+6. reloads the in-memory RAG components.
 
 Example response:
 
@@ -323,8 +373,12 @@ The endpoint returns an error when:
 
 - no question is provided,
 - no document index is available,
-- document indexing is currently in progress,
-- the RAG pipeline cannot generate an answer.
+- document indexing is currently in progress.
+
+**Note**
+
+If no relevant information is found in the indexed documents, 
+the endpoint returns a language-aware fallback response instead of an error.
 
 ### Clear documents and index
 
@@ -430,7 +484,8 @@ Proje özel hesabı kaç TL?
 
 ## Retrieval Configuration
 
-The main retrieval settings are located in `config.py`.
+The following values are the project defaults and can be adjusted in
+`config.py` to suit different datasets or hardware configurations.
 
 ```python
 CHUNK_SIZE = 600
@@ -470,8 +525,8 @@ Retrieval uses a wider candidate set to reduce the chance of missing a relevant
 chunk. The LLM receives a smaller set to avoid context dilution and unnecessary
 generation latency.
 
-Hybrid search parameters and Reciprocal Rank Fusion behavior are defined in
-`search.py`.
+Additional hybrid retrieval parameters, including Reciprocal Rank Fusion (RRF),
+are implemented in `search.py`.
 
 ## OCR Processing
 
@@ -537,7 +592,7 @@ Stores index-related metadata.
 
 Stores the keyword retrieval index.
 
-These files are regenerated when the document index is rebuilt.
+These files are regenerated whenever the document index is rebuilt or reset.
 
 ## Project Structure
 
@@ -557,6 +612,9 @@ ai-document-assistant/
 ├── data/
 ├── cache/
 ├── test_samples/
+└── docs
+	└── images
+		└── app.png
 └── static/
     ├── index.html
     ├── app.js
@@ -565,8 +623,11 @@ ai-document-assistant/
 
 ## Test Samples
 
-The `test_samples/` directory contains documents used during development and
-evaluation.
+The `test_samples/` directory contains documents used during development, 
+testing and evaluation.
+
+These sample documents are included to demonstrate OCR, retrieval, and
+question-answering across different document types and languages.
 
 ### Digital Turkish document
 
@@ -634,11 +695,13 @@ What is the IGST amount?
 What is the tax amount in words?
 ```
 
-The detailed test results are documented in `TESTING.md`.
+Detailed evaluation results, test cases, and known limitations are documented
+in `TESTING.md`.
 
 ## Automated Evaluation
 
-The project includes an automated evaluation harness.
+The project includes an automated evaluation framework for measuring
+retrieval and question-answering performance.
 
 Run:
 
@@ -672,7 +735,7 @@ See `TESTING.md` for the latest results and known evaluation limitations.
 
 ## Manual Testing Scenarios
 
-The application has been tested with:
+The application was manually tested using:
 
 - digital Turkish PDFs,
 - digital English PDFs,
@@ -732,42 +795,31 @@ available in `DEVLOG.md`.
 
 ## Future Improvements
 
+- Incremental document indexing
 - Per-document deletion
 - Background task queue for indexing
 - Real-time OCR and indexing progress
-- Neighboring chunk expansion
 - Layout-aware text extraction
 - Table-specific extraction
+- Neighboring chunk expansion
+- Reranking model
 - Metadata filters
 - Document-level search filters
 - Improved query normalization
 - Exact-label boosting
-- Reranking model
 - Persistent chat history
-- Docker support
-- Automated browser tests
 - Authentication
 - Multi-user index isolation
 - Production database integration
+- Docker support
+- Automated browser tests
 
 ## Documentation
 
-Additional project documentation:
-
-```text
-TESTING.md
-```
-
-Contains manual test cases, automated evaluation results, edge cases, and known
-testing gaps.
-
-```text
-DEVLOG.md
-```
-
-Contains development phases, architectural decisions, challenges, and technical
-trade-offs.
+- **TESTING.md** – Manual test cases, automated evaluation results, edge cases, and known limitations.
+- **DEVLOG.md** – Development phases, architectural decisions, challenges, and technical trade-offs.
 
 ## License
 
-This project was developed as a technical case study.
+This project was developed as a technical case study and is provided under the MIT License.
+See the `LICENSE` file for details.

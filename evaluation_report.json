@@ -1,0 +1,755 @@
+{
+  "summary": {
+    "total_tests": 32,
+    "overall_passed": 20,
+    "overall_accuracy_percent": 62.5,
+    "answer_passed": 20,
+    "answer_accuracy_percent": 62.5,
+    "source_checked": 28,
+    "source_passed": 27,
+    "source_accuracy_percent": 96.43,
+    "errors": 0,
+    "total_duration_seconds": 233.175,
+    "average_duration_seconds": 7.287
+  },
+  "tests": [
+    {
+      "question": "What is the supplier GSTIN?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 17ABCDEF123GXYZ",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ocr_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ocr_en_product_guide.pdf"
+      ],
+      "duration_seconds": 12.252,
+      "error": null
+    },
+    {
+      "question": "What is the invoice number?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 1234",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 4.009,
+      "error": null
+    },
+    {
+      "question": "What is the invoice date?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 1/7/2017",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "duration_seconds": 3.458,
+      "error": null
+    },
+    {
+      "question": "Who is the consignee?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: RECEIVER COMPANY",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ocr_en_invoice_table.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ocr_en_invoice_table.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 3.442,
+      "error": null
+    },
+    {
+      "question": "What is the place of supply?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: Haryana",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_en_invoice_table.pdf",
+        "ocr_tr_production.jpg"
+      ],
+      "retrieved_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_en_invoice_table.pdf",
+        "ocr_tr_production.jpg"
+      ],
+      "duration_seconds": 3.516,
+      "error": null
+    },
+    {
+      "question": "What is the IGST rate?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 12%",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg"
+      ],
+      "duration_seconds": 3.469,
+      "error": null
+    },
+    {
+      "question": "How many pieces are listed in total?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": false,
+      "expected": "Missing: 298",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "duration_seconds": 3.404,
+      "error": null
+    },
+    {
+      "question": "What is the total invoice amount?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 1,56,146.00",
+      "expected_source": "ocr_en_invoice_table.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 3.528,
+      "error": null
+    },
+    {
+      "question": "COCO veri seti nedir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "nesne algılama, veri seti",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "COCO (Common Objects in Context) veri seti, bilyiik dlcekli bir nesne algilama, bi olusturma veri setidir. Cok cesitli nesne kategorileri izerinde arastirmay! tesvik etmek icin tasarlanmishr ve genellikle bilgisavarl: g6rii modellerini kyaslamak icin kullanilir.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 22.313,
+      "error": null
+    },
+    {
+      "question": "COCO kaç nesne kategorisi içerir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "80",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "80",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "duration_seconds": 3.037,
+      "error": null
+    },
+    {
+      "question": "COCO veri setinde toplam kaç görüntü vardır?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "330K",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "COCO veri setinde toplam 330K görüntü vardır.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 5.476,
+      "error": null
+    },
+    {
+      "question": "Train2017 kaç görüntü içerir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "118.287",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "118.287",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "duration_seconds": 3.045,
+      "error": null
+    },
+    {
+      "question": "Val2017 kaç görüntü içerir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "5.000",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "5.000",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 3.065,
+      "error": null
+    },
+    {
+      "question": "Test2017 kaç görüntü içerir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "20.288",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "Test2017 20.288 görüntü içerir.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ornek_test_raporu.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "ornek_test_raporu.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 4.529,
+      "error": null
+    },
+    {
+      "question": "COCO hangi görevlerde kullanılır?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: segmentasyon",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "COCO, nesne algılama, biliitleme ve poz kestirim görevlerinde kullanılır.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "duration_seconds": 7.09,
+      "error": null
+    },
+    {
+      "question": "COCO bilgisayarlı görü için neden önemlidir?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: 330K, 80 nesne, değerlendirme",
+      "expected_source": "ocr_tr_production.png",
+      "actual_answer": "COCO veri seti, bilgisayarlı görü için önemlidir çünkü çok çeşitli nesne kategorileri üzerinde araştırma teşvik eder ve genellikle bilgisayarlı görüş modellerini karşılamak için kullanılır. Ayrıca, nesne algılama, segmentasyon ve poz kestirim görevleri üzerinde çalışan araştırmacılar ve geliştiriciler için temel bir veri setidir.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 21.074,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK'ın kuruluş amacı nedir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "araştırma, geliştirme, ülke kalkınması",
+      "expected_source": "digital_tr_product_guide.pdf",
+      "actual_answer": "Türkiye'de müsbet bilimlerde araştırma ve geliştirme faaliyetlerini ülke kalkınmasındaki önceliklere göre geliştirmek, özendirmek, düzenlemek ve koordine etmek; mevcut bilimsel ve teknik bilgilere erişmek ve erişilmesini sağlamak.",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "ocr_tr_production.jpg",
+        "ocr_tr_production.png",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "ocr_tr_production.jpg",
+        "ocr_tr_production.png",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 17.485,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK hangi yıl kuruldu?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "1963",
+      "expected_source": "digital_tr_product_guide.pdf",
+      "actual_answer": "1963",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 2.435,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK hangi kanun ile kurulmuştur?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "278",
+      "expected_source": "digital_tr_product_guide.pdf",
+      "actual_answer": "278 sayılı Kanun ile.",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 2.789,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK bilim insanlarını nasıl destekler?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "burs, ödül",
+      "expected_source": "digital_tr_product_guide.pdf",
+      "actual_answer": "TÜBİTAK bilim insanlarının, araştırmacıların yetiştirilmeleri ve geliştirilmeleri için olanaklar sağlamak; bu amaçla ödüller vermek, öğrenim ve sonrasında üstün başarısıyla kendini gösteren gençleri izleyerek onların yetişme ve gelişmelerine yardım etmek ve bu amaçla burslar vermek, yarışmalar düzenlemek ve yayınlar yapmak; bu amaçlarla ilgili her türlü faaliyette bulunmak.",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf"
+      ],
+      "duration_seconds": 25.573,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK'ın en yüksek karar organı hangisidir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "Bilim Kurulu",
+      "expected_source": "digital_tr_product_guide.pdf",
+      "actual_answer": "Bilim Kurulu",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 2.911,
+      "error": null
+    },
+    {
+      "question": "What sample volume is acceptable?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "100, 120",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "The acceptable sample volume is between 100 mL and 120 mL.",
+      "actual_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg"
+      ],
+      "retrieved_sources": [
+        "digital_en_product_guide.pdf",
+        "ocr_en_product_guide.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg"
+      ],
+      "duration_seconds": 4.631,
+      "error": null
+    },
+    {
+      "question": "How should the bottle be filled?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "between the two lines",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "The bottle should be filled until the water sample level is BETWEEN THE TWO LINES on the bottle (100 — 120 mL). Preferably, the sample level should be at or just slightly above the 100 mL line. Samples below the 100 mL (lower) line WILL NOT BE TESTED due to insufficient sample volume. Samples above the 120 mL (upper) line WILL NOT BE TESTED due to overfilled bottle. If the bottle is overfilled, you may pour off excess water until the sample volume is between the two lines before shipping.",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 27.355,
+      "error": null
+    },
+    {
+      "question": "What should you do if the bottle is overfilled?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "pour off",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "If the bottle is overfilled, you may pour off any excess water until the sample volume is between the two lines.",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 5.909,
+      "error": null
+    },
+    {
+      "question": "What should not be written on the bottle?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: Do not write on the bottle",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "No relevant information was found in the uploaded documents.",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 2.932,
+      "error": null
+    },
+    {
+      "question": "Sample custody nasıl sağlanır?",
+      "passed": false,
+      "answer_passed": false,
+      "source_passed": true,
+      "expected": "Missing: Chain-of-Custody",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "Sample custody, samples veya diğer fiziksel delillerin bir araştırmacının elinde veya onun gözünde olduğunda sağlanır. Bu durum, delilin toplandığı anda ve diğer kanıtların sunumuna kadar izlenebilir bir şekilde izlenebilmesini sağlar.",
+      "actual_sources": [
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 15.06,
+      "error": null
+    },
+    {
+      "question": "How long should samples take to reach the laboratory?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "30 hours",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "30 hours",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 2.407,
+      "error": null
+    },
+    {
+      "question": "What is the laboratory phone number?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": true,
+      "expected": "573-751-3334",
+      "expected_source": "digital_en_product_guide.pdf",
+      "actual_answer": "573-751-3334",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 3.543,
+      "error": null
+    },
+    {
+      "question": "COCO veri setinin lisans ücreti nedir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": null,
+      "expected": "Document not found fallback",
+      "expected_source": null,
+      "actual_answer": "Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı.",
+      "actual_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ornek_test_raporu.pdf"
+      ],
+      "duration_seconds": 2.925,
+      "error": null
+    },
+    {
+      "question": "Invoice'daki müşteri telefonu nedir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": null,
+      "expected": "Document not found fallback",
+      "expected_source": null,
+      "actual_answer": "Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı.",
+      "actual_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ornek_test_raporu.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.jpg",
+        "ocr_tr_production.png",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_invoice_table.pdf",
+        "ornek_test_raporu.pdf",
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ocr_tr_production.jpg",
+        "ocr_tr_production.png",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 3.421,
+      "error": null
+    },
+    {
+      "question": "TÜBİTAK'ın 2025 bütçesi nedir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": null,
+      "expected": "Document not found fallback",
+      "expected_source": null,
+      "actual_answer": "Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı.",
+      "actual_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf"
+      ],
+      "retrieved_sources": [
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf",
+        "ocr_tr_production.png",
+        "ocr_tr_production.jpg",
+        "digital_en_product_guide.pdf"
+      ],
+      "duration_seconds": 3.718,
+      "error": null
+    },
+    {
+      "question": "Sample collection için kaç personel gerekir?",
+      "passed": true,
+      "answer_passed": true,
+      "source_passed": null,
+      "expected": "Document not found fallback",
+      "expected_source": null,
+      "actual_answer": "Bu soruya ilişkin bilgi yüklenen belgelerde bulunamadı.",
+      "actual_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ornek_test_raporu.pdf",
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "retrieved_sources": [
+        "ocr_en_product_guide.pdf",
+        "digital_en_product_guide.pdf",
+        "ornek_test_raporu.pdf",
+        "digital_tr_product_guide.pdf",
+        "digital_tr_table.pdf"
+      ],
+      "duration_seconds": 3.313,
+      "error": null
+    }
+  ]
+}

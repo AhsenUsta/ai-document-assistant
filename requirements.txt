@@ -8,5 +8,5 @@ ollama
 rank-bm25
 langdetect
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart

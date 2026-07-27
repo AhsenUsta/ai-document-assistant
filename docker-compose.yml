@@ -1,0 +1,81 @@
+services:
+  ai-document-assistant:
+    build: .
+    container_name: ai-document-assistant
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      HF_HOME: /app/model_cache
+      SENTENCE_TRANSFORMERS_HOME: /app/model_cache
+
+    volumes:
+      - ./data:/app/data
+      - ./cache:/app/cache
+      - ./static:/app/static
+      - ./model_cache:/app/model_cache
+
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-model-loader:
+        condition: service_completed_successfully
+
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-document-ollama
+
+    ports:
+      - "11434:11434"
+
+    volumes:
+      - ollama_models:/root/.ollama
+
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+    restart: unless-stopped
+
+  ollama-model-loader:
+    image: ollama/ollama:latest
+    container_name: ai-document-model-loader
+
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+
+    entrypoint: ["/bin/sh", "-c"]
+
+    command:
+      - |
+        echo "Waiting for Ollama..."
+        until ollama list >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        echo "Checking qwen3:8b model..."
+
+        if ollama list | grep -q "qwen3:8b"; then
+          echo "Model already exists."
+        else
+          echo "Downloading qwen3:8b..."
+          ollama pull qwen3:8b
+        fi
+
+        echo "Model is ready."
+
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+    restart: "no"
+
+volumes:
+  ollama_models:
