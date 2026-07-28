@@ -167,15 +167,29 @@ TESSERACT_PATH = "/usr/bin/tesseract"
 MODEL_NAME = "qwen3:8b"
 ```
 
-Earlier project iterations used `qwen3:1.7b` because of hardware and VRAM
-constraints.
+This model provides the best answer quality but requires more computational resources.
 
-The larger model produced more reliable answers but required more memory and
-longer generation times. Additional details about this decision are available
-in `DEVLOG.md`.
+If you are running the project on a lower-end system (e.g. a 4 GB GPU or a CPU-only environment), 
+you can switch to a smaller Ollama model by updating `MODEL_NAME` in `config.py`.
 
-Any Ollama model available on the local system can be used by updating
-`MODEL_NAME` in `config.py`.
+Recommended alternatives:
+
+```python
+MODEL_NAME = "qwen2.5:3b"
+```
+
+or
+
+```python
+MODEL_NAME = "llama3.2:3b"
+```
+
+Smaller models provide faster inference but may reduce answer quality.
+
+Earlier project iterations used `qwen3:1.7b` because of hardware and VRAM constraints. 
+The project now defaults to `qwen3:8b` to improve answer quality.
+
+Additional details about this decision are available in `DEVLOG.md`.
 
 ## Installation
 

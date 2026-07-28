@@ -50,6 +50,7 @@ initialize_components()
 
 
 def build_prompt(question: str, results: list[dict]) -> str:
+    not_found = NOT_FOUND_TR if detect_turkish(question) else NOT_FOUND_EN
     context_parts = []
 
     for index, result in enumerate(results, start=1):
@@ -77,7 +78,7 @@ Rules:
 - Pay close attention to which label each number belongs to.
 - If the answer is missing say:
 
-"No relevant information was found in the uploaded documents."
+"{not_found}"
 
 Never assume missing values are zero.
 
@@ -136,11 +137,6 @@ def generate_answer(question: str) -> dict:
     )
 
     answer = response["message"]["content"].strip()
-    
-    if answer == NOT_FOUND_EN and detect_turkish(question):
-        answer = NOT_FOUND_TR
-    elif answer == NOT_FOUND_TR and not detect_turkish(question):
-        answer = NOT_FOUND_EN
         
     sources = list(
         dict.fromkeys(
