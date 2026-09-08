@@ -13,8 +13,9 @@ STATIC_DIR = BASE_DIR / "static"
 # -------------------------
 # CHUNKING
 # -------------------------
-CHUNK_SIZE = 600
-CHUNK_OVERLAP = 100
+CHUNK_SIZE = 900
+CHUNK_OVERLAP = 150
+CHUNK_STRATEGY = "recursive"
 
 # -------------------------
 # OCR

@@ -4,7 +4,7 @@ import pytesseract
 import fitz
 from PIL import Image
 from pathlib import Path
-from config import CHUNK_SIZE,CHUNK_OVERLAP,DATA_ROOT,TESSERACT_PATH,OCR_LANG
+from config import CHUNK_SIZE,CHUNK_OVERLAP,TESSERACT_PATH, OCR_LANG,CHUNK_STRATEGY
 
 
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
@@ -15,6 +15,11 @@ pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 def clean_text(text: str) -> str:
     """Removes excess spaces."""
     return re.sub(r"\s+", " ", text).strip()
+    
+def clean_text_preserve_structure(text: str) -> str:
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 # -------------------------
 # TEXT EXTRACTORS
@@ -130,7 +135,7 @@ def is_scanned_page(page) -> bool:
 # -------------------------
 # CHUNKING
 # -------------------------
-def split_text(
+def split_text_fixed(
     text: str,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
@@ -182,10 +187,85 @@ def split_text(
         chunks.append(" ".join(current_words))
 
     print(
-        f"[TIMING] split_text ({len(chunks)} chunks): "
+        f"[TIMING] split_text_fixed ({len(chunks)} chunks): "
         f"{time.perf_counter() - start_time:.3f}s"
     )
     return chunks
+    
+    
+def split_text_recursive(text: str, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP,) -> list[str]:
+    start_time = time.perf_counter()
+
+    text = clean_text_preserve_structure(text)
+
+    if not text:
+        return []
+
+    separators = ["\n\n", "\n", ". ", " "]
+
+    def recursive_split(part: str, level: int = 0) -> list[str]:
+        part = part.strip()
+
+        if not part:
+            return []
+
+        if len(part) <= chunk_size:
+            return [part]
+
+        if level >= len(separators):
+            step = max(1, chunk_size - chunk_overlap)
+
+            return [
+                part[i:i + chunk_size].strip()
+                for i in range(0, len(part), step)
+                if part[i:i + chunk_size].strip()
+            ]
+
+        separator = separators[level]
+        pieces = [
+            piece.strip()
+            for piece in part.split(separator)
+            if piece.strip()
+        ]
+
+        if len(pieces) <= 1:
+            return recursive_split(part, level + 1)
+
+        chunks: list[str] = []
+        current = ""
+
+        for piece in pieces:
+            candidate = (
+                piece
+                if not current
+                else current + separator + piece
+            )
+
+            if len(candidate) <= chunk_size:
+                current = candidate
+            else:
+                if current:
+                    chunks.extend(
+                        recursive_split(current, level + 1)
+                    )
+
+                current = piece
+
+        if current:
+            chunks.extend(
+                recursive_split(current, level + 1)
+            )
+
+        return chunks
+
+    chunks = recursive_split(text)
+
+    print(
+        f"[TIMING] split_text_recursive ({len(chunks)} chunks): "
+        f"{time.perf_counter() - start_time:.3f}s"
+    )
+
+    return chunks    
 
 # -------------------------
 # LOADER
@@ -219,7 +299,12 @@ def load_documents_from_folder(folder_path: str | Path) -> list[dict]:
             else:
                 continue
 
-            new_chunks = split_text(text)
+            if CHUNK_STRATEGY == "recursive":
+                new_chunks = split_text_recursive(text)
+            elif CHUNK_STRATEGY == "fixed":
+                new_chunks = split_text_fixed(text)
+            else:
+                raise ValueError(f"Unknown chunk strategy: {CHUNK_STRATEGY}")
 
             if not new_chunks:
                 skipped += 1

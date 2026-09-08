@@ -856,6 +856,54 @@ no observable regressions in the tested documents.
 
 ---
 
+### TC-030 – Chunking Strategy Evaluation
+
+**Description**
+
+Compared fixed-size and recursive chunking strategies to evaluate their
+impact on RAG answer accuracy, source retrieval accuracy, and response
+time.
+
+**Procedure**
+
+1. Run the same 32-question evaluation set using fixed chunking with a
+   chunk size of 900 and an overlap of 150.
+2. Run the same evaluation using recursive chunking with the same chunk
+   size and overlap.
+3. Compare answer accuracy, source retrieval accuracy, and average
+   response time.
+4. Review failed questions to identify remaining limitations.
+
+**Results**
+
+| Strategy            | Answer Accuracy | Source Accuracy | Avg. Response Time |
+| ------------------- | --------------: | --------------: | -----------------: |
+| Fixed (900/150)     |           62.5% |            100% |            8.759 s |
+| Recursive (900/150) |           75.0% |          96.43% |            8.681 s |
+
+**Status**
+
+- ✅ Passed
+
+**Observation**
+
+Recursive chunking improved answer accuracy from 62.5% to 75.0% while
+maintaining nearly the same average response time.
+
+The results suggest that preserving document structure during chunking
+provides more useful context for answer generation than fixed-size
+splitting. Source retrieval accuracy decreased slightly from 100% to
+96.43%, but the improvement in answer accuracy was more significant.
+
+Based on these results, recursive chunking was selected as the current
+default strategy.
+
+Remaining failures were concentrated primarily in OCR-heavy,
+table-based, and numeric extraction questions.
+
+---
+
+
 ## Summary of RAG/QA Limitations
 
 Testing across financial tables and a scanned invoice surfaced three

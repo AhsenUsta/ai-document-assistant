@@ -432,6 +432,35 @@ module and document their purpose.
 This would make experimentation easier and prevent unexplained magic numbers
 from appearing in the code.
 
+### 9. Evaluate chunking strategies systematically
+
+The initial RAG pipeline used fixed-size chunking. To determine whether
+preserving document structure could improve answer quality, fixed and
+recursive chunking strategies were evaluated using the same 32-question
+test set.
+
+Both strategies were tested with a chunk size of 900 and an overlap of
+150.
+
+| Strategy  | Answer Accuracy | Source Accuracy | Avg. Response Time |
+| --------- | --------------: | --------------: | -----------------: |
+| Fixed     |           62.5% |            100% |            8.759 s |
+| Recursive |           75.0% |          96.43% |            8.681 s |
+
+Recursive chunking improved answer accuracy by 12.5 percentage points
+without increasing average response time significantly. Although source
+accuracy decreased slightly, the retrieved context produced more correct
+final answers overall.
+
+Based on these results, recursive chunking was selected as the current
+default strategy.
+
+This experiment also showed that retrieval accuracy alone is not enough
+to evaluate a RAG system. A relevant source may be retrieved successfully
+while the final answer still fails because of context construction,
+OCR quality, or generation behavior.
+
+
 ### Conclusion
 
 The main lesson from the project is that a RAG system should not be treated as

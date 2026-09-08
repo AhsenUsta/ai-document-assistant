@@ -502,8 +502,9 @@ The following values are the project defaults and can be adjusted in
 `config.py` to suit different datasets or hardware configurations.
 
 ```python
-CHUNK_SIZE = 600
-CHUNK_OVERLAP = 100
+CHUNK_SIZE = 900
+CHUNK_OVERLAP = 150
+CHUNK_STRATEGY = "recursive"
 
 TOP_K = 15
 MAX_CONTEXTS = 5
@@ -524,6 +525,16 @@ Defines the approximate amount of text stored in each document chunk.
 
 Repeats a portion of the previous chunk to reduce information loss at chunk
 boundaries.
+
+### `CHUNK_STRATEGY`
+
+Defines how extracted document text is divided into chunks.
+
+The current default is recursive, which attempts to preserve document
+structure by preferring paragraph, line, sentence, and word boundaries before
+falling back to character-level splitting.
+
+Fixed-size chunking is also available for comparison and experimentation.
 
 ### `TOP_K`
 
@@ -745,7 +756,22 @@ evaluation_report.json
 
 The current benchmark contains 32 automated test cases.
 
-See `TESTING.md` for the latest results and known evaluation limitations.
+### Chunking Evaluation
+
+Fixed and recursive chunking strategies were evaluated using the same
+32-question benchmark.
+
+| Strategy            | Answer Accuracy | Source Accuracy | Avg. Response Time |
+| ------------------- | --------------: | --------------: | -----------------: |
+| Fixed (900/150)     |           62.5% |            100% |            8.759 s |
+| Recursive (900/150) |       **75.0%** |          96.43% |        **8.681 s** |
+
+Recursive chunking was selected as the default strategy because it improved
+answer accuracy by 12.5 percentage points while maintaining approximately the
+same average response time.
+
+Detailed experiment results and remaining OCR/table-related limitations are
+documented in `TESTING.md`.
 
 ## Manual Testing Scenarios
 
